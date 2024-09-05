@@ -1,0 +1,21 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --watch index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@payos/node": "^1.0.8",
+    "cors": "^2.8.5",
+    "discord.js": "^14.16.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4"
+  }
+}
