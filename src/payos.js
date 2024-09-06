@@ -6,10 +6,10 @@ const payOS = new PayOS(process.env.PAYOS_CLIENT_ID, process.env.PAYOS_API_KEY, 
 
 module.exports = payOS;
 
-// Phương thức kiểm tra trạng thái thanh toán
+// Phương thức kiểm tra trạng thái thanh toán bằng API getPaymentLinkInfo
 module.exports.checkPaymentStatus = async function(orderCode) {
     try {
-        const response = await axios.get(`https://api.payos.com/payment/status`, {
+        const response = await axios.get(`https://api.payos.com/payment/getpaymentlinkinfo`, {
             params: { orderCode },
             headers: {
                 'Authorization': `Bearer ${process.env.PAYOS_API_KEY}`
@@ -22,7 +22,7 @@ module.exports.checkPaymentStatus = async function(orderCode) {
     }
 };
 
-// Phương thức hủy giao dịch (cần phải thay đổi URL và tham số theo tài liệu API của PayOS)
+// Phương thức hủy giao dịch
 module.exports.cancelPayment = async function(orderCode) {
     try {
         const response = await axios.post(`https://api.payos.com/payment/cancel`, {
