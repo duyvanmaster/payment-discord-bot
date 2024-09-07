@@ -9,8 +9,7 @@ module.exports = payOS;
 // Phương thức kiểm tra trạng thái thanh toán bằng API getPaymentLinkInfo
 module.exports.checkPaymentStatus = async function(orderCode) {
     try {
-        const response = await axios.get(`https://api.payos.com/payment/getpaymentlinkinfo`, {
-            params: { orderCode },
+        const response = await axios.get(`https://api-merchant.payos.vn/v2/payment-requests/${orderCode}`, {
             headers: {
                 'Authorization': `Bearer ${process.env.PAYOS_API_KEY}`
             }
@@ -25,11 +24,10 @@ module.exports.checkPaymentStatus = async function(orderCode) {
 // Phương thức hủy giao dịch
 module.exports.cancelPayment = async function(orderCode) {
     try {
-        const response = await axios.post(`https://api.payos.com/payment/cancel`, {
-            orderCode
-        }, {
+        const response = await axios.post(`https://api-merchant.payos.vn/v2/payment-requests/${orderCode}/cancel`, {}, {
             headers: {
-                'Authorization': `Bearer ${process.env.PAYOS_API_KEY}`
+                'Authorization': `Bearer ${process.env.PAYOS_API_KEY}`,
+                'Content-Type': 'application/json'
             }
         });
         return response.data.status === 'CANCELLED';  // Điều chỉnh theo cấu trúc phản hồi của API
