@@ -85,6 +85,10 @@ client.on("messageCreate", async (message) => {
   }
 });
 
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
 app.post("/payos-webhook", async (req, res) => {
   try {
     console.log("Received Webhook Data:", req.body.data);
