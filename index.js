@@ -89,60 +89,42 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-// Webhook xử lý khi nhận thanh toán
 app.post("/payos-webhook", async (req, res) => {
   try {
     console.log("Received Webhook Data:", req.body.data);
-    const { orderCode, amount } = req.body.data;
 
-    // Kiểm tra orderCode và amount nhận từ webhook
-    console.log(`OrderCode from webhook: ${orderCode}, Amount from webhook: ${amount}`);
-    console.log("Pending Payments:", pendingPayments);
+    const { orderCode, description, amount } = req.body.data;
 
-    // Kiểm tra xem mã đơn hàng và số tiền có khớp không
-    if (pendingPayments[orderCode] && pendingPayments[orderCode].amount === amount) {
+    if (!orderCode) {
+      console.error("Invalid webhook data:", req.body);
+      return res.status(400).send("Invalid webhook data");
+    }
+    if (orderCode === 123 && description === "VQRIO123") {
+      // for confirming webhook
+      return res.status(200).send("Webhook confirmed received");
+    }
+
+    // Check if the order code and amount match the pending payment
+    if (
+      pendingPayments[orderCode] &&
+      pendingPayments[orderCode].amount === amount
+    ) {
       pendingPayments[orderCode].status = "completed";
-
-      const userId = pendingPayments[orderCode].userId;
-      console.log(`UserId for this payment: ${userId}`);
-
-      // Kiểm tra xem userId có tồn tại không
-      if (!userId) {
-        console.error("User ID not found for order:", orderCode);
-        return res.status(500).send("User ID not found");
+      // Edit messaage to show payment is completed
+      const channel = await client.channels.fetch(process.env.CHANNEL_ID);
+      if (!channel) {
+        return res.status(500).send("Invalid channel ID");
       }
-
-      // Lấy người dùng qua userId
-      const user = await client.users.fetch(userId);
-      console.log("Fetched user:", user);
-
-      if (!user) {
-        console.error("User not found for ID:", userId);
-        return res.status(500).send("User not found");
-      }
-
-      // Gửi tin nhắn xác nhận thanh toán qua DM
-      await user.send({
-        embeds: [
-          {
-            title: "Xác nhận thanh toán",
-            description: `Thanh toán của bạn với mã đơn hàng **${orderCode}** đã được xác nhận!`,
-            fields: [
-              { name: "Số tiền", value: `${amount} VND`, inline: true },
-              { name: "Mã đơn hàng", value: `${orderCode}`, inline: true }
-            ],
-            color: 0x00FF00, // Màu xanh lá cây để thể hiện thành công
-            footer: { text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!" }
-          }
-        ]
-      });
-      console.log("Payment confirmed and DM sent to user");
 
       res.status(200).send(`Payment for order ${orderCode} completed`);
-    } else {
-      console.error("Invalid order code or amount");
-      return res.status(500).send("Invalid order code or amount");
+      await channel.messages.edit(pendingPayments[orderCode].messageId, {
+        content: "Thanh toán của bạn đã được xác nhận! Cảm ơn bạn.",
+        embeds: [],
+        components: [],
+      });
+      return;
     }
+    return res.status(500).send("Invalid order code or amount");
   } catch (error) {
     console.error("Error processing webhook:", error);
     res.status(500).send("Error processing webhook");
