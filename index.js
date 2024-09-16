@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require("discord.js");
 const dotenv = require("dotenv");
 const payOS = require("./src/payos");
+const { getProductImageUrl } = require('./src/productImages');
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -58,6 +59,7 @@ client.on('interactionCreate', async interaction => {
   // Khi người dùng chọn sản phẩm chính
   if (interaction.isStringSelectMenu() && interaction.customId === 'select_product') {
     const selectedProduct = interaction.values[0];
+    const productImageUrl = getProductImageUrl(selectedProduct);
 
     let subOptions = [];
     switch (selectedProduct) {
@@ -81,7 +83,7 @@ client.on('interactionCreate', async interaction => {
         ];
         break;
     }
-
+  
     const subMenuRow = new ActionRowBuilder()
       .addComponents(
         new StringSelectMenuBuilder()
@@ -89,12 +91,13 @@ client.on('interactionCreate', async interaction => {
           .setPlaceholder('Chọn lựa chọn phụ')
           .addOptions(subOptions)
       );
-
+  
     await interaction.reply({
       embeds: [
         new EmbedBuilder()
           .setTitle('Chọn sản phẩm')
           .setDescription(`Vui lòng chọn lựa chọn phụ cho sản phẩm **${selectedProduct}**`)
+          .setImage(productImageUrl)
           .setTimestamp(),
       ],
       components: [subMenuRow],
@@ -161,6 +164,7 @@ client.on('interactionCreate', async interaction => {
       });
 
       // Gửi thông tin đơn hàng lên kênh quản trị
+      const productImageUrl = getProductImageUrl(selectedSubProduct);
       const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
       if (pendingChannel && pendingChannel.isTextBased()) {
         await pendingChannel.send({
@@ -175,8 +179,9 @@ client.on('interactionCreate', async interaction => {
                 { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: false },
                 { name: "URL mã QR", value: `[Thanh toán QRCode](${qrCodeImageUrl})` },
                 { name: "Liên kết thanh toán", value: `[Thanh toán qua liên kết](${paymentLinkResponse.checkoutUrl})`, inline: false }
-              )
+              )             
               //.setImage(qrCodeImageUrl)
+              .setImage(productImageUrl)
               .setTimestamp()
           ]
         });
@@ -295,18 +300,19 @@ app.post("/payos-webhook", async (req, res) => {
       const user = await client.users.fetch(userId);
       const dmChannel = await user.createDM();
       const sentMessage = await dmChannel.messages.fetch(messageId);
-
+      const productImageUrl = getProductImageUrl(product);
       if (sentMessage) {
         // Cập nhật tin nhắn với key sản phẩm
         const updatedEmbed = new EmbedBuilder()
-          .setTitle("Xác nhận thanh toán")
-          .setDescription(`**Key sản phẩm:** \n\`${keyToSend}\``)
+          .setTitle("Đơn hàng đã hoàn thành")
+          .setDescription(`**Key sản phẩm:** \n\`\`\`${keyToSend}\`\`\``)
           .addFields(
             { name: "Số tiền", value: `${amount} VND`, inline: true },
             { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
             { name: "Sản phẩm", value: `${product}`, inline: true },
           )
           .setColor(0x00FF00) // Màu xanh lá để biểu thị thành công
+          .setImage(productImageUrl)
           .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!" })
           .setTimestamp();
 
@@ -315,6 +321,7 @@ app.post("/payos-webhook", async (req, res) => {
       }
 
       // Cập nhật tin nhắn trong kênh quản trị
+      
       const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
       const messages = await pendingChannel.messages.fetch({ limit: 100 });
       const orderMessage = messages.find(msg => msg.embeds[0]?.fields.some(field => field.value === orderCode.toString()));
