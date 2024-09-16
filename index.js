@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectM
 const dotenv = require("dotenv");
 const payOS = require("./src/payos");
 const { getProductImageUrl } = require('./src/productImages');
+const productPrices = require('./src/productPrices');
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -112,10 +113,11 @@ client.on('interactionCreate', async interaction => {
     // Tạo mã đơn hàng và liên kết thanh toán
     const domain = process.env.YOUR_DOMAIN;
     const orderCode = Number(String(Date.now()).slice(-6)); // Tạo mã đơn hàng duy nhất
+    const productPrice = productPrices[selectedSubProduct] || 10000;
 
     const body = {
       orderCode,
-      amount: 10000, // Có thể điều chỉnh số tiền theo sản phẩm
+      amount: productPrice, // Có thể điều chỉnh số tiền theo sản phẩm
       description: selectedSubProduct,
       returnUrl: `${domain}/success.html`,
       cancelUrl: `${domain}/cancel.html`,
@@ -135,9 +137,9 @@ client.on('interactionCreate', async interaction => {
         const embed = new EmbedBuilder()
           .setDescription('**Trạng thái thanh toán:** ```\nChưa hoàn tất thanh toán```')
           .addFields(
+            { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: true },
             { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-            { name: "Số tiền", value: `${body.amount}`, inline: true },
-            { name: "Sản phẩm", value: selectedSubProduct, inline: true }
+            { name: "Số tiền", value: `${body.amount}`, inline: true }
           )
           .setImage(qrCodeImageUrl)
           .setTimestamp();
@@ -159,8 +161,9 @@ client.on('interactionCreate', async interaction => {
         embeds: [
           new EmbedBuilder()
             .setDescription('Đã gửi mã QR thanh toán qua DM của bạn!')
-            .setColor(0x00FF00) // Màu xanh lá cây để biểu thị thành công
-        ]
+            .setColor(0x007AFF) // Màu xanh lá cây để biểu thị thành công
+        ],
+        ephemeral : true
       });
 
       // Gửi thông tin đơn hàng lên kênh quản trị
@@ -174,8 +177,8 @@ client.on('interactionCreate', async interaction => {
               .setDescription('**Trạng thái thanh toán:** ```\nChưa hoàn tất thanh toán```')
               .addFields(
                 { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-                { name: "ID người dùng", value: `${interaction.user.id}`, inline: true },
-                { name: "Số tiền", value: `${body.amount}`, inline: true },
+                { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
+                { name: "Số tiền", value: `${body.amount} VND`, inline: true },
                 { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: false },
                 { name: "URL mã QR", value: `[Thanh toán QRCode](${qrCodeImageUrl})` },
                 { name: "Liên kết thanh toán", value: `[Thanh toán qua liên kết](${paymentLinkResponse.checkoutUrl})`, inline: false }
@@ -333,9 +336,11 @@ app.post("/payos-webhook", async (req, res) => {
               .setTitle('Hoàn tất thanh toán')
               .setDescription('**Trạng thái thanh toán:** ```\nThanh toán đã hoàn tất```')
               .addFields(
+                { name: "Sản phẩm", value: product, inline: true },
                 { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
                 { name: "Số tiền", value: `${amount} VND`, inline: true },
-                { name: "Sản phẩm", value: product, inline: true }
+                { name: "ID người dùng", value: `<@${userId}>`, inline: true },
+
               )
               .setColor(0x00FF00)
               .setTimestamp()
