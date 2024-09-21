@@ -1,13 +1,14 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const dotenv = require("dotenv");
 const payOS = require("./src/payos");
-const { getProductImageUrl } = require('./src/productImages');
-const productPrices = require('./src/productPrices');
-const freeproductInfo = require('./src/freeproductinfo');
+const { getProductImageUrl } = require('./src/utils/productImages');
+const productPrices = require('./src/utils/productPrices');
+const freeproductInfo = require('./src/utils/freeproductinfo');
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const productInfo = require('./src/productInfo');
+const productInfo = require('./src/utils/productInfo');
+const { createTicket } = require('./src/handler/ticketManager');
 
 dotenv.config();
 
@@ -74,7 +75,6 @@ function createFreeProductEmbed(selectedSubProduct) {
   const embed = new EmbedBuilder()
     .setTitle(product.title || 'Không có tiêu đề')
     .setDescription(product.description || 'Không có mô tả')
-    .setColor(0x007AFF)
     .setImage(productImageUrl)
     .setFooter({
       text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!", 
@@ -116,6 +116,28 @@ async function handlePayment(selectedSubProduct, interaction, body) {
       messageId: sentMessage.id,
     };
 
+    // Gửi thông tin đến kênh thanh toán
+    const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
+    if (pendingChannel && pendingChannel.isTextBased()) {
+      await pendingChannel.send({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle("Thông tin giao dịch người dùng")
+            .setDescription('**Trạng thái thanh toán:** ```\nChưa hoàn tất thanh toán```')
+            .addFields(
+              { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true },
+              { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
+              { name: "Số tiền", value: `${body.amount} VND`, inline: true },
+              { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: false },
+              { name: "URL mã QR", value: `[Thanh toán QRCode](${qrCodeImageUrl})` },
+              { name: "Liên kết thanh toán", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false }
+            )
+            .setImage(getProductImageUrl(selectedSubProduct))
+            .setTimestamp()
+        ]
+      });
+    }
+
     await interaction.reply({
       embeds: [
         new EmbedBuilder()
@@ -138,17 +160,18 @@ client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu()) return;
 
   if (interaction.isChatInputCommand() && interaction.commandName === 'shop') {
-    const mainrow = new ActionRowBuilder()
+    const mainOptions = Object.keys(productInfo).map(key => ({
+      label: productInfo[key].title,
+      value: key,
+      emoji: productInfo[key].emoji,
+    }));
+
+    const mainRow = new ActionRowBuilder()
       .addComponents(
         new StringSelectMenuBuilder()
           .setCustomId('select_product')
           .setPlaceholder('Chọn sản phẩm chính')
-          .addOptions([
-            { label: 'AIO LegitVN', description: 'Nhấn vào đây để xem chi tiết hơn AIO LegitVN', value: 'aiolegitvn' },
-            { label: 'Regedit', description: 'Nhấn vào đây để xem bảng giá Regedit', value: 'regedit' },
-            { label: 'Tối ưu Giả lập & PC', description: 'Nhấn vào đây để xem bảng giá Tối ưu', value: 'optimize' },
-            { label: 'Free', description: 'Nhấn vào đây để xem các mục miễn phí', value: 'free', emoji: '🎁' }
-          ])
+          .addOptions(mainOptions)
       );
 
     await interaction.reply({
@@ -158,7 +181,7 @@ client.on('interactionCreate', async interaction => {
           .setDescription('Lựa chọn sản phẩm dưới menu để thêm biết chi tiết')
           .setTimestamp(),
       ],
-      components: [mainrow]
+      components: [mainRow]
     });
   }
 
@@ -179,6 +202,7 @@ client.on('interactionCreate', async interaction => {
       label: productDetails.subProducts[subProductKey].title,
       value: subProductKey,
       description: productDetails.subProducts[subProductKey].description,
+      emoji: productDetails.subProducts[subProductKey].emoji,
     }));
 
     const subMenuRow = new ActionRowBuilder()
@@ -205,7 +229,7 @@ client.on('interactionCreate', async interaction => {
   if (interaction.isStringSelectMenu() && interaction.customId === 'select_sub_product') {
     const selectedSubProduct = interaction.values[0];
 
-    if (selectedSubProduct.startsWith('legit_')) {
+    if (selectedSubProduct.startsWith('free_')) {
       const { embed, components } = createFreeProductEmbed(selectedSubProduct);
       await sendDM(interaction.user.id, { embed, components });
 
@@ -265,44 +289,155 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
+      // Kiểm tra nếu subProduct có subProducts con
+      if (subProductDetails.subProducts) {
+        let subSubOptions = Object.keys(subProductDetails.subProducts).map(subSubProductKey => ({
+          label: subProductDetails.subProducts[subSubProductKey].title,
+          emoji: subProductDetails.subProducts[subSubProductKey].emoji,
+          value: subSubProductKey,
+          description: subProductDetails.subProducts[subSubProductKey].description,
+        }));
+
+        const subSubMenuRow = new ActionRowBuilder()
+          .addComponents(
+            new StringSelectMenuBuilder()
+              .setCustomId('select_sub_sub_product')
+              .setPlaceholder('Chọn hiệu ứng muốn mua')
+              .addOptions(subSubOptions)
+          );
+
+        await interaction.reply({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(subProductDetails.title)
+              //.setDescription('Chọn dịch vụ con từ danh sách dưới đây.')
+              .setImage(getProductImageUrl(selectedSubProduct))
+              .setTimestamp(),
+          ],
+          components: [subSubMenuRow],
+          ephemeral: true,
+        });
+      } else {
+        // Nếu chỉ có một sản phẩm con, thực hiện thanh toán ngay lập tức
+        const orderCode = Number(String(Date.now()).slice(-6));
+        const productPrice = productPrices[selectedSubProduct] || 10000;
+
+        const body = {
+          orderCode,
+          amount: productPrice,
+          description: selectedSubProduct,
+          returnUrl: `${process.env.YOUR_DOMAIN}/success.html`,
+          cancelUrl: `${process.env.YOUR_DOMAIN}/cancel.html`,
+        };
+
+        const qrCodeImageUrl = await handlePayment(selectedSubProduct, interaction, body);
+      }
+    }
+  }
+
+  if (interaction.isStringSelectMenu() && interaction.customId === 'select_sub_sub_product') {
+    const selectedSubSubProduct = interaction.values[0];
+
+    // Tìm sản phẩm cha cho sub-sub-product
+    const parentProduct = Object.keys(productInfo).find(productKey => {
+      const product = productInfo[productKey];
+      return product.subProducts && Object.keys(product.subProducts).some(subProductKey =>
+        product.subProducts[subProductKey].subProducts && product.subProducts[subProductKey].subProducts[selectedSubSubProduct]
+      );
+    });
+
+    // Nếu không tìm thấy sản phẩm cha
+    if (!parentProduct) {
+      await interaction.reply({
+        content: 'Sản phẩm không hợp lệ. Vui lòng thử lại.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Tìm subProductDetails từ sản phẩm cha
+    const subProductKey = Object.keys(productInfo[parentProduct].subProducts).find(subProductKey =>
+      productInfo[parentProduct].subProducts[subProductKey].subProducts && productInfo[parentProduct].subProducts[subProductKey].subProducts[selectedSubSubProduct]
+    );
+
+    const subProductDetails = productInfo[parentProduct].subProducts[subProductKey].subProducts[selectedSubSubProduct];
+
+    if (!subProductDetails) {
+      await interaction.reply({
+        content: 'Lựa chọn không hợp lệ. Vui lòng thử lại.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Kiểm tra xem subProductDetails có subProducts không
+    if (subProductDetails.subProducts) {
+      let subSubSubOptions = Object.keys(subProductDetails.subProducts).map(subSubSubProductKey => ({
+        label: subProductDetails.subProducts[subSubSubProductKey].title,
+        value: subSubSubProductKey,
+        emoji: subProductDetails.subProducts[subSubSubProductKey].emoji,
+        description: subProductDetails.subProducts[subSubSubProductKey].description,
+      }));
+
+      const subSubSubMenuRow = new ActionRowBuilder()
+        .addComponents(
+          new StringSelectMenuBuilder()
+            .setCustomId('select_sub_sub_sub_product')
+            .setPlaceholder('Chọn hiệu ứng muốn mua')
+            .addOptions(subSubSubOptions)
+        );
+
+      await interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(subProductDetails.title)
+            //.setDescription('Chọn dịch vụ con từ danh sách dưới đây.')
+            .setImage(getProductImageUrl(selectedSubSubProduct))
+            .setTimestamp(),
+        ],
+        components: [subSubSubMenuRow],
+        ephemeral: true,
+      });
+    } else {
+      // Thực hiện thanh toán ngay lập tức nếu không còn subProducts
       const orderCode = Number(String(Date.now()).slice(-6));
-      const productPrice = productPrices[selectedSubProduct] || 10000;
+      const productPrice = productPrices[selectedSubSubProduct] || 10000;
 
       const body = {
         orderCode,
         amount: productPrice,
-        description: selectedSubProduct,
+        description: selectedSubSubProduct,
         returnUrl: `${process.env.YOUR_DOMAIN}/success.html`,
         cancelUrl: `${process.env.YOUR_DOMAIN}/cancel.html`,
       };
 
-      const qrCodeImageUrl = await handlePayment(selectedSubProduct, interaction, body);
-
-      const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
-      if (pendingChannel && pendingChannel.isTextBased()) {
-        await pendingChannel.send({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("Thông tin giao dịch người dùng")
-              .setDescription('**Trạng thái thanh toán:** ```\nChưa hoàn tất thanh toán```')
-              .addFields(
-                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-                { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
-                { name: "Số tiền", value: `${body.amount} VND`, inline: true },
-                { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: false },
-                { name: "URL mã QR", value: `[Thanh toán QRCode](${qrCodeImageUrl})` },
-                { name: "Liên kết thanh toán", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false }
-              )
-              .setImage(getProductImageUrl(selectedSubProduct))
-              .setTimestamp()
-          ]
-        });
-      }
+      const qrCodeImageUrl = await handlePayment(selectedSubSubProduct, interaction, body);
     }
+  }
+
+  if (interaction.isStringSelectMenu() && interaction.customId === 'select_sub_sub_sub_product') {
+    const selectedSubSubSubProduct = interaction.values[0];
+
+    // Thực hiện thanh toán ngay lập tức nếu đã đến cấp độ cuối cùng
+    const orderCode = Number(String(Date.now()).slice(-6));
+    const productPrice = productPrices[selectedSubSubSubProduct] || 10000;
+
+    const body = {
+      orderCode,
+      amount: productPrice,
+      description: selectedSubSubSubProduct,
+      returnUrl: `${process.env.YOUR_DOMAIN}/success.html`,
+      cancelUrl: `${process.env.YOUR_DOMAIN}/cancel.html`,
+    };
+
+    const qrCodeImageUrl = await handlePayment(selectedSubSubSubProduct, interaction, body);
   }
 });
 
-// Webhook nhận thông báo thanh toán
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
 app.post("/payos-webhook", async (req, res) => {
   try {
     const { orderCode, description, amount } = req.body.data;
@@ -315,11 +450,45 @@ app.post("/payos-webhook", async (req, res) => {
       return res.status(200).send("Webhook confirmed received");
     }
 
-    if (pendingPayments[orderCode].amount === amount) {
+    if (pendingPayments[orderCode] && pendingPayments[orderCode].amount === amount) {
       const { userId, product, messageId } = pendingPayments[orderCode];
+
+      // Lấy người dùng và server (guild)
+      const user = await client.users.fetch(userId); // Lấy thông tin người dùng
+      const guild = await client.guilds.fetch(process.env.GUILD_ID); // Lấy thông tin server Discord (cập nhật GUILD_ID)
+
+      // Tạo kênh ticket cho người dùng
+      const ticketChannel = await createTicket(client, guild, user);
 
       const keyFilePath = path.join(__dirname, 'key', `${product}_keys.json`);
       let keys;
+
+      // Tạo DM và lấy message đã gửi để edit
+      const dmChannel = await user.createDM();
+      const sentMessage = await dmChannel.messages.fetch(messageId);
+
+      // Kiểm tra xem file key có tồn tại không
+      if (!fs.existsSync(keyFilePath)) {
+        console.error("File key không tồn tại:", keyFilePath);
+
+        await sentMessage.edit({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle("Thanh toán của bạn đã hoàn tất")
+              .setDescription(`\`\`\`Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
+              .addFields(
+                { name: "Số tiền", value: `${amount} VND`, inline: true },
+                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
+                { name: "Sản phẩm", value: `${product}`, inline: true }
+              )
+              .setColor(0x00FF00)
+              .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
+              .setTimestamp()
+          ]
+        });
+
+        return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do không tồn tại file key");
+      }
 
       try {
         const data = fs.readFileSync(keyFilePath, 'utf8');
@@ -329,30 +498,46 @@ app.post("/payos-webhook", async (req, res) => {
         keys = JSON.parse(data);
       } catch (err) {
         console.error("Lỗi khi đọc file key:", err);
-        await sendDM(userId, {
-          embed: new EmbedBuilder()
-            .setTitle("Lỗi Key")
-            .setDescription(`Xin lỗi, chúng tôi không thể đọc hoặc lấy key cho sản phẩm **${product}**.`)
-            .setColor(0xFF0000)
-            .setFooter({ text: "Vui lòng liên hệ hỗ trợ." })
-            .setTimestamp(),
-          components: []
+
+        await sentMessage.edit({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle("Thanh toán của bạn đã hoàn tất")
+              .setDescription(`\`\`\`Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
+              .addFields(
+                { name: "Số tiền", value: `${amount} VND`, inline: true },
+                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
+                { name: "Sản phẩm", value: `${product}`, inline: true }
+              )
+              .setColor(0x00FF00)
+              .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
+              .setTimestamp()
+          ]
         });
-        return res.status(500).send("Lỗi khi đọc file key");
+
+        return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do lỗi khi đọc file key");
       }
 
       if (!keys || keys.length === 0) {
         console.error("Không còn key cho sản phẩm:", product);
-        await sendDM(userId, {
-          embed: new EmbedBuilder()
-            .setTitle("Key không khả dụng")
-            .setDescription(`Xin lỗi, không còn key cho sản phẩm **${product}**.`)
-            .setColor(0xFF0000)
-            .setFooter({ text: "Vui lòng liên hệ hỗ trợ." })
-            .setTimestamp(),
-          components: []
+
+        await sentMessage.edit({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle("Thanh toán của bạn đã hoàn tất")
+              .setDescription(`\`\`\`Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
+              .addFields(
+                { name: "Số tiền", value: `${amount} VND`, inline: true },
+                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
+                { name: "Sản phẩm", value: `${product}`, inline: true }
+              )
+              .setColor(0x00FF00)
+              .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
+              .setTimestamp()
+          ]
         });
-        return res.status(500).send("Không còn key khả dụng");
+
+        return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do không còn key khả dụng");
       }
 
       const keyToSend = keys.shift();
@@ -361,39 +546,38 @@ app.post("/payos-webhook", async (req, res) => {
         fs.writeFileSync(keyFilePath, JSON.stringify(keys, null, 2));
       } catch (err) {
         console.error("Lỗi khi lưu file key:", err);
-        await sendDM(userId, {
-          embed: new EmbedBuilder()
-            .setTitle("Lỗi khi xử lý Key")
-            .setDescription(`Xin lỗi, đã xảy ra lỗi khi xử lý key của bạn cho sản phẩm **${product}**.`)
-            .setColor(0xFF0000)
-            .setFooter({ text: "Vui lòng liên hệ hỗ trợ." })
-            .setTimestamp(),
-          components: []
+
+        await sentMessage.edit({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle("Lỗi khi xử lý Key")
+              .setDescription(`\`\`\`Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
+              .addFields(
+                { name: "Số tiền", value: `${amount} VND`, inline: true },
+                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
+                { name: "Sản phẩm", value: `${product}`, inline: true }
+              )
+              .setColor(0xFF0000)
+              .setFooter({ text: "Vui lòng liên hệ hỗ trợ." })
+              .setTimestamp()
+          ]
         });
+
         return res.status(500).send("Lỗi khi lưu file key");
       }
 
-      const user = await client.users.fetch(userId);
-      const dmChannel = await user.createDM();
-      const sentMessage = await dmChannel.messages.fetch(messageId);
-      const productImageUrl = getProductImageUrl(product);
+      const updatedEmbed = new EmbedBuilder()
+        .setTitle("Đơn hàng đã hoàn thành")
+        .setDescription(`**Key sản phẩm:** \n\`\`\`${keyToSend}\`\`\``)
+        .addFields(
+          { name: "Số tiền", value: `${amount} VND`, inline: true },
+          { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
+          { name: "Sản phẩm", value: `${product}`, inline: true }
+        )
+        .setColor(0x00FF00)
+        .setTimestamp();
 
-      if (sentMessage) {
-        const updatedEmbed = new EmbedBuilder()
-          .setTitle("Đơn hàng đã hoàn thành")
-          .setDescription(`**Key sản phẩm:** \n\`\`\`${keyToSend}\`\`\``)
-          .addFields(
-            { name: "Số tiền", value: `${amount} VND`, inline: true },
-            { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-            { name: "Sản phẩm", value: `${product}`, inline: true }
-          )
-          .setColor(0x00FF00)
-          .setImage(productImageUrl)
-          .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!" })
-          .setTimestamp();
-
-        await sentMessage.edit({ embeds: [updatedEmbed] });
-      }
+      await sentMessage.edit({ embeds: [updatedEmbed] });
 
       const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
       const messages = await pendingChannel.messages.fetch({ limit: 100 });
@@ -417,10 +601,10 @@ app.post("/payos-webhook", async (req, res) => {
         });
       }
 
-      delete pendingPayments[orderCode];
-      res.status(200).send(`Thanh toán cho đơn hàng ${orderCode} đã hoàn tất`);
+      //delete pendingPayments[orderCode];
+      return res.status(200).send(`Thanh toán cho đơn hàng ${orderCode} đã hoàn tất và ticket đã được tạo`);
     } else {
-      console.error(" ");
+      console.error("Mã đơn hàng hoặc số tiền không hợp lệ");
       return res.status(500).send("Mã đơn hàng hoặc số tiền không hợp lệ");
     }
   } catch (error) {
@@ -429,10 +613,8 @@ app.post("/payos-webhook", async (req, res) => {
   }
 });
 
-// Khởi động bot Discord
 client.login(process.env.TOKEN);
 
-// Khởi động máy chủ Express
 app.listen(PORT, function () {
   console.log(`Máy chủ Express đang lắng nghe trên cổng ${PORT}`);
 });
