@@ -28,9 +28,11 @@ const client = new Client({
 
 let pendingPayments = {};
 
-// Khi bot đã sẵn sàng
-client.once("ready", () => {
-  console.log("Bot đang hoạt động!");
+client.on('ready', () => {
+  console.log(`Logged in as ${client.user.tag}!`);
+  client.user.setActivity({
+    name: '.gg/legitvn',
+  });
 });
 
 // Hàm gửi DM cho người dùng
@@ -170,7 +172,7 @@ client.on('interactionCreate', async interaction => {
       .addComponents(
         new StringSelectMenuBuilder()
           .setCustomId('select_product')
-          .setPlaceholder('Chọn sản phẩm chính')
+          .setPlaceholder('Xem chi tiết sả phẩm tại đây')
           .addOptions(mainOptions)
       );
 
@@ -209,7 +211,7 @@ client.on('interactionCreate', async interaction => {
       .addComponents(
         new StringSelectMenuBuilder()
           .setCustomId('select_sub_product')
-          .setPlaceholder('Chọn sản phẩm con')
+          .setPlaceholder('Chọn sản phẩm để thanh toán')
           .addOptions(subOptions)
       );
 
@@ -312,7 +314,6 @@ client.on('interactionCreate', async interaction => {
               .setTitle(subProductDetails.title)
               //.setDescription('Chọn dịch vụ con từ danh sách dưới đây.')
               .setImage(getProductImageUrl(selectedSubProduct))
-              .setTimestamp(),
           ],
           components: [subSubMenuRow],
           ephemeral: true,
@@ -393,7 +394,6 @@ client.on('interactionCreate', async interaction => {
             .setTitle(subProductDetails.title)
             //.setDescription('Chọn dịch vụ con từ danh sách dưới đây.')
             .setImage(getProductImageUrl(selectedSubSubProduct))
-            .setTimestamp(),
         ],
         components: [subSubSubMenuRow],
         ephemeral: true,

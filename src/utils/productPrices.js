@@ -6,6 +6,7 @@ const productPrices = {
     nitro_firts: 35000,
     boost_server: 150000,
     chut_vi_clove: 15000,
+    toi_uu_gia_lap: 150000,
   };
 
   module.exports = productPrices;

@@ -36,9 +36,9 @@ async function createTicket(client, guild, user) {
     // Tạo Embed
     const embed = new EmbedBuilder()
       .setTitle("Thanh toán thành công")
-      .setDescription(`Xin chào ${user}, Vui lòng đợi trong giây lát đội ngũ hộ trợ sẽ đến ngay.`)
+      .setDescription(`Xin chào ${user}, Vui lòng chờ trong giây lát đội ngũ hộ trợ sẽ đến ngay.`)
       .setFooter({
-        text: "LegitVN", 
+        text: 'LegitVN Ticket System',
         iconURL: 'https://r2.e-z.host/2825fb47-f8a4-472c-9624-df2489f897c0/rf2o4ffc.png'
       })
       .setColor(0x00FF00)
