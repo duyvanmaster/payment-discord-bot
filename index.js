@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder
 const dotenv = require("dotenv");
 const payOS = require('./src/payos/payos');
 const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB } = require('./src/utils/mongodb');
+const keep_alive = require ('./keep_alive')
 const { updatePaymentStatusOnChannel } = require('./src/utils/statusonchanel');
 const qrcode = require('./src/handler/qrcode')
 const { getProductImageUrl } = require('./src/utils/productImages');
@@ -16,7 +17,6 @@ const mongoose = require('mongoose');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3030;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -617,7 +617,3 @@ app.post("/payos-webhook", async (req, res) => {
 });
 
 client.login(process.env.TOKEN);
-
-app.listen(PORT, function () {
-  console.log(`Máy chủ Express đang lắng nghe trên cổng ${PORT}`);
-});

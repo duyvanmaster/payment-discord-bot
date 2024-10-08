@@ -44,37 +44,25 @@ const commands = [
         name: 'account',
         type: 3, // STRING
         description: 'Số tài khoản ngân hàng',
-        required: true,
-        choices: [
-          { name: '2662006366', value: '2662006366' },
-        ]
+        required: true
       },
       {
         name: 'accountname',
         type: 3, // STRING
         description: 'Tên tài khoản ngân hàng',
-        required: true,
-        choices: [
-          { name: 'TRAN VAN QUY', value: 'TRAN VAN QUY' },
-        ]
+        required: true
       },
       {
         name: 'amount',
         type: 4, // INTEGER
         description: 'Số tiền (VND)',
-        required: true,
-        choices: [
-          { name: '10.000 VND', value: '10000' },
-        ]
+        required: true
       },
       {
         name: 'memo',
         type: 3, // STRING
         description: 'Ghi chú',
-        required: false,
-        choices: [
-          { name: 'LegitVN', value: 'legitvn' },
-        ]
+        required: false
       },
       {
         name: 'template',
