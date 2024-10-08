@@ -27,8 +27,12 @@ async function createTicket(client, guild, user) {
           allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
         },
         {
-          id: '1287036141337313350', // Đặt quyền cho vai trò hỗ trợ (cập nhật ID vai trò hỗ trợ)
+          id: '1073890692608311336', // Đặt quyền cho vai trò hỗ trợ (cập nhật ID vai trò hỗ trợ)
           allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
+        },
+        {
+          id: '1205709275197079582', // Đặt quyền cho vai trò hỗ trợ (cập nhật ID vai trò hỗ trợ)
+          allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.EmbedLinks],
         }
       ],
     });

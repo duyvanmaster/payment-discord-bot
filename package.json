@@ -16,8 +16,10 @@
     "discord.js": "^14.16.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "mongoose": "^8.7.0",
     "ngrok": "^5.0.0-beta.2",
     "nodemon": "^3.1.7",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "vietqr": "^1.1.9"
   }
 }

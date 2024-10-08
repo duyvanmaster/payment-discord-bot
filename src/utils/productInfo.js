@@ -3,7 +3,7 @@ const { Emoji } = require("discord.js");
 const productInfo = {
   regedit: {
       title: 'Regedit',
-      description: '```yaml\nCác tính năng và tác dụng của Regedit Limited & Config```\n<:Registry_Editor_icon:1286356371536613416> **Regedit Limited**\n- Hỗ trợ Windows 10/11\n- Tương thích với Bluestacks và MsiPlayer\n- Tối ưu hóa Registry\n- Loại bỏ config cũ, tùy chỉnh sâu thông số Registry\n- Tinh chỉnh giả lập để tăng độ ổn định\n- Cài đặt và cập nhật các thành phần Registry cần thiết của file\n- Cải thiện trải nghiệm kéo tâm\n\n<:Registry_Editor_icon:1286356371536613416> **Regedit Config**\n- Bao gồm tất cả tính năng của Limited\n- Nâng cao hiệu suất\n- Tăng tốc độ phản hồi\n- Và tích hợp gamesense cho cài đặt độ nhạy',
+      description: '```yaml\nCác tính năng và tác dụng của Regedit Limited & Config```\n<:regedit:1066225725574742126>  **Regedit Limited**\n<a:arrow:1293222327126982737> Hỗ trợ Windows 10/11\n<a:arrow:1293222327126982737> Tương thích với Bluestacks và MsiPlayer\n<a:arrow:1293222327126982737> Tối ưu hóa Registry\n<a:arrow:1293222327126982737> Loại bỏ config cũ, tùy chỉnh sâu thông số Registry\n<a:arrow:1293222327126982737> Tinh chỉnh giả lập để tăng độ ổn định\n<a:arrow:1293222327126982737> Cài đặt và cập nhật các thành phần Registry cần thiết của file\n<a:arrow:1293222327126982737> Cải thiện trải nghiệm kéo tâm\n\n<:regedit:1066225725574742126>  **Regedit Config**\n<a:arrow:1293222327126982737> Bao gồm tất cả tính năng của Limited\n<a:arrow:1293222327126982737> Nâng cao hiệu suất\n<a:arrow:1293222327126982737> Tăng tốc độ phản hồi\n<a:arrow:1293222327126982737> Và tích hợp gamesense cho cài đặt độ nhạy',
       emoji: '1066225725574742126',
       subProducts: {
           regedit_limited: {
@@ -20,7 +20,7 @@ const productInfo = {
   },
   optimize: {
       title: 'Tối ưu giả lập',
-      description: '```yaml\nCác tính năng và tác dụng của TỐI ƯU GIẢ LẬP```\n1. Tinh chỉnh các setting cần thiết trong giả lập\n2. Tối ưu hóa giả lập bằng những phương pháp thủ công và tools độc quyền của LegitVN\n3. Tinh chỉnh hệ thống máy tính để có thể chạy mượt mà nhất trong tầm cấu hình của bạn\n4. Ngoài ra còn cài đặt các phần thiết yếu cho giả lập nếu người dùng cần',
+      description: '```yaml\nCác tính năng và tác dụng của TỐI ƯU GIẢ LẬP```\n<a:arrow:1293222327126982737> Tinh chỉnh các setting cần thiết trong giả lập\n<a:arrow:1293222327126982737> Tối ưu hóa giả lập bằng những phương pháp thủ công và tools độc quyền của LegitVN\n<a:arrow:1293222327126982737> Tinh chỉnh hệ thống máy tính để có thể chạy mượt mà nhất trong tầm cấu hình của bạn\n<a:arrow:1293222327126982737> Ngoài ra còn cài đặt các phần thiết yếu cho giả lập nếu người dùng cần',
       emoji: '1286356032901349477',
       subProducts: {
           toi_uu_gia_lap: {
@@ -30,8 +30,8 @@ const productInfo = {
       },
   },
   free: {
-      title: 'Sản phẩm miễn phí',
-      description: 'Thông tin các sản phẩm miễn phí.',
+      title: 'Miễn phí',
+      description: '```yaml\nCác dịch vụ miễn phí của LegitVN```\n<a:arrow:1293222327126982737> **AIO LegitVN**\n<a:arrow:1293222327126982737> **FFX86**\n<a:arrow:1293222327126982737> **Tweaks**\n<a:arrow:1293222327126982737> **Set High All Priority**\n<a:arrow:1293222327126982737> **Set High Application Performance Graphics Setting**',
     emoji: '🎁',
       subProducts: {
         free_aiolegitvn: {
@@ -48,11 +48,11 @@ const productInfo = {
           },
           free_highpriority: {
             title: 'Set High All Priority',
-            //emoji: '1290315746785759244',
+            emoji: '1286356371536613416',
         },
         free_highgraphic: {
             title: 'Set High Application Performance Graphics Setting',
-            //emoji: '1290315746785759244',
+            emoji: '1286356371536613416',
         },
 
       },

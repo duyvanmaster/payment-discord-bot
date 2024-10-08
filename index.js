@@ -1,6 +1,9 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const dotenv = require("dotenv");
-const payOS = require("./src/payos");
+const payOS = require('./src/payos/payos');
+const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB } = require('./src/utils/mongodb');
+const { updatePaymentStatusOnChannel } = require('./src/utils/statusonchanel');
+const qrcode = require('./src/handler/qrcode')
 const { getProductImageUrl } = require('./src/utils/productImages');
 const productPrices = require('./src/utils/productPrices');
 const freeproductInfo = require('./src/utils/freeproductinfo');
@@ -9,7 +12,7 @@ const fs = require("fs");
 const path = require("path");
 const productInfo = require('./src/utils/productInfo');
 const { createTicket } = require('./src/handler/ticketManager');
-
+const mongoose = require('mongoose');
 dotenv.config();
 
 const app = express();
@@ -49,8 +52,7 @@ async function sendDM(userId, { embed, components }) {
 
 // Tạo embed cho sản phẩm miễn phí
 function createFreeProductEmbed(selectedSubProduct) {
-  const productImageUrl = getProductImageUrl(selectedSubProduct);
-  
+
   // Kiểm tra nếu sản phẩm tồn tại trong freeproductInfo
   const product = freeproductInfo[selectedSubProduct];
   if (!product) {
@@ -67,7 +69,7 @@ function createFreeProductEmbed(selectedSubProduct) {
   // Tạo nút mở link
   const linkButton = new ButtonBuilder()
     .setLabel('Tải xuống')
-    .setURL(product.downloadLink || 'https://default-link.com')
+    .setURL(product.downloadLink || 'https://discord.gg/legitvn')
     .setStyle(ButtonStyle.Link);
 
   // Tạo hàng chứa nút
@@ -77,9 +79,9 @@ function createFreeProductEmbed(selectedSubProduct) {
   const embed = new EmbedBuilder()
     .setTitle(product.title || 'Không có tiêu đề')
     .setDescription(product.description || 'Không có mô tả')
-    .setImage(productImageUrl)
+    .setImage(getProductImageUrl(selectedSubProduct))
     .setFooter({
-      text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!", 
+      text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!",
       iconURL: 'https://r2.e-z.host/2825fb47-f8a4-472c-9624-df2489f897c0/rf2o4ffc.png'
     })
     .setTimestamp();
@@ -91,16 +93,14 @@ function createFreeProductEmbed(selectedSubProduct) {
 async function handlePayment(selectedSubProduct, interaction, body) {
   try {
     const paymentLinkResponse = await payOS.createPaymentLink(body);
-    const qrCodeImageUrl = `https://img.vietqr.io/image/${
-      paymentLinkResponse.bin
-    }-${paymentLinkResponse.accountNumber}-vietqr_pro.jpg?amount=${
-      paymentLinkResponse.amount
-    }&addInfo=${encodeURIComponent(paymentLinkResponse.description)}`;
+    const qrCodeImageUrl = `https://img.vietqr.io/image/${paymentLinkResponse.bin
+      }-${paymentLinkResponse.accountNumber}-vietqr_pro.jpg?amount=${paymentLinkResponse.amount
+      }&addInfo=${encodeURIComponent(paymentLinkResponse.description)}`;
     body.checkoutUrl = paymentLinkResponse.checkoutUrl;
 
     // Tạo Embed ban đầu
     const embed = new EmbedBuilder()
-      .setDescription('**Trạng thái thanh toán:** ```\nChưa hoàn tất thanh toán```')
+      .setDescription('**Trạng thái thanh toán:**\n```Chưa hoàn tất thanh toán```')
       .addFields(
         { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: true },
         { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true },
@@ -125,7 +125,7 @@ async function handlePayment(selectedSubProduct, interaction, body) {
         embeds: [
           new EmbedBuilder()
             .setTitle("Thông tin giao dịch người dùng")
-            .setDescription('**Trạng thái thanh toán:** ```\nChưa hoàn tất thanh toán```')
+            .setDescription('**Trạng thái thanh toán:** ```Chưa hoàn tất thanh toán```')
             .addFields(
               { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true },
               { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
@@ -149,6 +149,13 @@ async function handlePayment(selectedSubProduct, interaction, body) {
       ephemeral: true
     });
 
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    await delay(3000);
+    await savePaymentToDB(body, selectedSubProduct, interaction, sentMessage);
+
     return qrCodeImageUrl;
   } catch (error) {
     console.error("Lỗi khi tạo liên kết thanh toán:", error);
@@ -157,11 +164,10 @@ async function handlePayment(selectedSubProduct, interaction, body) {
   }
 }
 
-// Xử lý lệnh /shop
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu()) return;
 
-  if (interaction.isChatInputCommand() && interaction.commandName === 'shop') {
+  if (interaction.isChatInputCommand() && interaction.commandName === 'legitvn') {
     const mainOptions = Object.keys(productInfo).map(key => ({
       label: productInfo[key].title,
       value: key,
@@ -172,15 +178,17 @@ client.on('interactionCreate', async interaction => {
       .addComponents(
         new StringSelectMenuBuilder()
           .setCustomId('select_product')
-          .setPlaceholder('Xem chi tiết sả phẩm tại đây')
+          .setPlaceholder('CHỌN DỊCH VỤ')
           .addOptions(mainOptions)
       );
 
     await interaction.reply({
       embeds: [
         new EmbedBuilder()
-          .setTitle('LegitVN Bot')
-          .setDescription('Lựa chọn sản phẩm dưới menu để thêm biết chi tiết')
+          .setTitle('ÔNG BỤT LEGITVN CHỌN GÌ CÓ ĐÓ')
+          .setDescription('<a:arrow:1293222327126982737> Trang Web chính thức: [LegitVN](https://legitvn.com/)\n<a:arrow:1293222327126982737> Mọi vấn đề liên quan liên hệ: <@948239925701115914>')
+          .setImage('https://cdn.discordapp.com/attachments/1161271813460996126/1204309215582232616/gamesensepricehigh.gif?ex=67061f5b&is=6704cddb&hm=b16470f4c08857c5a0a9690120a11fc7102ef15f0d49bf3abbef4dfe7422b022&')
+          .setFooter({ text: 'LegitVN | The best or nothing'})
           .setTimestamp(),
       ],
       components: [mainRow]
@@ -189,7 +197,6 @@ client.on('interactionCreate', async interaction => {
 
   if (interaction.isStringSelectMenu() && interaction.customId === 'select_product') {
     const selectedProduct = interaction.values[0];
-    const productImageUrl = getProductImageUrl(selectedProduct);
     const productDetails = productInfo[selectedProduct];
 
     if (!productDetails) {
@@ -211,7 +218,7 @@ client.on('interactionCreate', async interaction => {
       .addComponents(
         new StringSelectMenuBuilder()
           .setCustomId('select_sub_product')
-          .setPlaceholder('Chọn sản phẩm để thanh toán')
+          .setPlaceholder('Chọn dịch vụ tại đây')
           .addOptions(subOptions)
       );
 
@@ -220,7 +227,7 @@ client.on('interactionCreate', async interaction => {
         new EmbedBuilder()
           .setTitle(productDetails.title)
           .setDescription(productDetails.description)
-          .setImage(productImageUrl)
+          .setImage(getProductImageUrl(selectedProduct))
           .setTimestamp(),
       ],
       components: [subMenuRow],
@@ -248,13 +255,12 @@ client.on('interactionCreate', async interaction => {
           embeds: [
             new EmbedBuilder()
               .setTitle("Thông tin sản phẩm miễn phí")
-              .setDescription('**Trạng thái:** ```\nSản phẩm miễn phí đã được yêu cầu```')
+              .setDescription('**Trạng thái:** ```diff\n+ Sản phẩm miễn phí đã được yêu cầu```')
               .addFields(
                 { name: "Mã đơn hàng", value: freeProductInfo.orderCode, inline: true },
                 { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
                 { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: false }
               )
-              .setColor(0x007AFF)
               .setTimestamp()
           ]
         });
@@ -268,6 +274,9 @@ client.on('interactionCreate', async interaction => {
         ],
         ephemeral: true
       });
+
+      await saveFreeProductToDB(freeProductInfo, interaction);
+
     } else {
       const parentProduct = Object.keys(productInfo).find(productKey => {
         return productInfo[productKey].subProducts && productInfo[productKey].subProducts[selectedSubProduct];
@@ -280,6 +289,8 @@ client.on('interactionCreate', async interaction => {
         });
         return;
       }
+
+
 
       const subProductDetails = productInfo[parentProduct].subProducts[selectedSubProduct];
 
@@ -440,30 +451,28 @@ app.get("/", (req, res) => {
 
 app.post("/payos-webhook", async (req, res) => {
   try {
+    console.log("Received Webhook Data:", req.body.data);
     const { orderCode, description, amount } = req.body.data;
 
     if (!orderCode) {
       console.error("Invalid webhook data:", req.body);
       return res.status(400).send("Invalid webhook data");
     }
-    if (orderCode === 123 && description === "VQRIO123") {
+    if (orderCode === 123 && amount === 10000 && description === "VQRIO123") {
       return res.status(200).send("Webhook confirmed received");
     }
 
     if (pendingPayments[orderCode] && pendingPayments[orderCode].amount === amount) {
       const { userId, product, messageId } = pendingPayments[orderCode];
 
-      // Lấy người dùng và server (guild)
-      const user = await client.users.fetch(userId); // Lấy thông tin người dùng
-      const guild = await client.guilds.fetch(process.env.GUILD_ID); // Lấy thông tin server Discord (cập nhật GUILD_ID)
-
       // Tạo kênh ticket cho người dùng
+      const user = await client.users.fetch(userId);
+      const guild = await client.guilds.fetch(process.env.GUILD_ID);
       const ticketChannel = await createTicket(client, guild, user);
 
-      const keyFilePath = path.join(__dirname, 'key', `${product}_keys.json`);
+      const keyFilePath = path.join(__dirname, './src/key', `${product}.json`);
       let keys;
 
-      // Tạo DM và lấy message đã gửi để edit
       const dmChannel = await user.createDM();
       const sentMessage = await dmChannel.messages.fetch(messageId);
 
@@ -475,7 +484,7 @@ app.post("/payos-webhook", async (req, res) => {
           embeds: [
             new EmbedBuilder()
               .setTitle("Thanh toán của bạn đã hoàn tất")
-              .setDescription(`\`\`\`Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
+              .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
               .addFields(
                 { name: "Số tiền", value: `${amount} VND`, inline: true },
                 { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
@@ -487,6 +496,9 @@ app.post("/payos-webhook", async (req, res) => {
           ]
         });
 
+        // Cập nhật MongoDB sau khi xử lý không thành công (không có key)
+        await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_no_key');
+        await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed_no_key');
         return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do không tồn tại file key");
       }
 
@@ -503,7 +515,7 @@ app.post("/payos-webhook", async (req, res) => {
           embeds: [
             new EmbedBuilder()
               .setTitle("Thanh toán của bạn đã hoàn tất")
-              .setDescription(`\`\`\`Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
+              .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
               .addFields(
                 { name: "Số tiền", value: `${amount} VND`, inline: true },
                 { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
@@ -515,6 +527,8 @@ app.post("/payos-webhook", async (req, res) => {
           ]
         });
 
+        // Cập nhật MongoDB khi có lỗi đọc file key
+        await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_key_error');
         return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do lỗi khi đọc file key");
       }
 
@@ -525,7 +539,7 @@ app.post("/payos-webhook", async (req, res) => {
           embeds: [
             new EmbedBuilder()
               .setTitle("Thanh toán của bạn đã hoàn tất")
-              .setDescription(`\`\`\`Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
+              .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
               .addFields(
                 { name: "Số tiền", value: `${amount} VND`, inline: true },
                 { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
@@ -537,6 +551,9 @@ app.post("/payos-webhook", async (req, res) => {
           ]
         });
 
+        // Cập nhật MongoDB khi không có key khả dụng
+        await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_no_key_available');
+        await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed_no_key_available');
         return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do không còn key khả dụng");
       }
 
@@ -551,7 +568,7 @@ app.post("/payos-webhook", async (req, res) => {
           embeds: [
             new EmbedBuilder()
               .setTitle("Lỗi khi xử lý Key")
-              .setDescription(`\`\`\`Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
+              .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
               .addFields(
                 { name: "Số tiền", value: `${amount} VND`, inline: true },
                 { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
@@ -563,12 +580,15 @@ app.post("/payos-webhook", async (req, res) => {
           ]
         });
 
+        // Cập nhật MongoDB khi có lỗi ghi key
+        await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_key_save_error');
+        await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed_key_save_error');
         return res.status(500).send("Lỗi khi lưu file key");
       }
 
       const updatedEmbed = new EmbedBuilder()
         .setTitle("Đơn hàng đã hoàn thành")
-        .setDescription(`**Key sản phẩm:** \n\`\`\`${keyToSend}\`\`\``)
+        .setDescription(`**Key sản phẩm:** \n\`\`\`${keyToSend}\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
         .addFields(
           { name: "Số tiền", value: `${amount} VND`, inline: true },
           { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
@@ -579,30 +599,13 @@ app.post("/payos-webhook", async (req, res) => {
 
       await sentMessage.edit({ embeds: [updatedEmbed] });
 
-      const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
-      const messages = await pendingChannel.messages.fetch({ limit: 100 });
-      const orderMessage = messages.find(msg => msg.embeds[0]?.fields.some(field => field.value === orderCode.toString()));
-
-      if (orderMessage) {
-        await orderMessage.edit({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle('Hoàn tất thanh toán')
-              .setDescription('**Trạng thái thanh toán:** ```\nThanh toán đã hoàn tất```')
-              .addFields(
-                { name: "Sản phẩm", value: product, inline: true },
-                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-                { name: "Số tiền", value: `${amount} VND`, inline: true },
-                { name: "ID người dùng", value: `<@${userId}>`, inline: true }
-              )
-              .setColor(0x00FF00)
-              .setTimestamp()
-          ]
-        });
-      }
+      await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed');
+      
+      await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed');
 
       //delete pendingPayments[orderCode];
       return res.status(200).send(`Thanh toán cho đơn hàng ${orderCode} đã hoàn tất và ticket đã được tạo`);
+
     } else {
       console.error("Mã đơn hàng hoặc số tiền không hợp lệ");
       return res.status(500).send("Mã đơn hàng hoặc số tiền không hợp lệ");
