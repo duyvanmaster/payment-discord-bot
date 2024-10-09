@@ -58,6 +58,10 @@ const productInfo = {
             title: 'Set Mouse Default',
             emoji: '1286356371536613416',
         },
+        free_fixgpu: {
+            title: 'Fix GPU Emulators',
+            emoji: '1286356371536613416',
+        },
 
       },
   },

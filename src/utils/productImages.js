@@ -29,6 +29,9 @@ function getProductImageUrl(product) {
     case 'free_mousedefault':
       productImageUrl = 'https://cdn.discordapp.com/attachments/1293223252755484717/1293526651740753970/image.png?ex=6707b212&is=67066092&hm=53ce0fa9dc81d1f3a2f12d8f0df2354d1037208bedd9ce8eb8f388109e7b8f7b&';
       break;
+    case 'free_fixgpu':
+      productImageUrl = 'https://cdn.discordapp.com/attachments/1152492381631942697/1293547895966142464/ezgif-6-5ea7ffd3cb.gif?ex=6707c5db&is=6706745b&hm=f711fdc5ed2c3d83aad27f4ef2fef30170c733cfb9641ab63c6e4f6783d6e75b&';
+      break;
     default:
       productImageUrl = 'https://media.discordapp.net/attachments/1106507037724127335/1210862617791307816/tb7m509syt.jpg?ex=66e93ab0&is=66e7e930&hm=8812cee98754d31adc9ad611371d4b4d0c51ebf2c7dffe557587e9985e42cc0a&=&format=webp&width=1024&height=204';
       break;

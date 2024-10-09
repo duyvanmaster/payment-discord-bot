@@ -31,6 +31,11 @@ const freeproductInfo = {
     description: '```yaml\nXóa những cấu hình dưới của mouse cũ trước khi sử dụng để tối ưu tác dụng của mouse default nhất.```\n```HKEY_USERS\\S-1-5-18\\Control Panel\\Mouse```\n```HKEY_USERS\\S-1-5-19\\Control Panel\\Mouse```\n```HKEY_USERS\\S-1-5-20\\Control Panel\\Mouse```\n```HKEY_USERS\\S-1-5-21\\Control Panel\\Mouse```\n```HKEY_USERS\\.DEFAULT\\Control Panel\\Mouse```\n```HKEY_CURRENT_USER\\Control Panel\\Mouse```\n\n **File Bao gồm**\n> - S-1-5-18 def.reg\n> - S-1-5-19 def.reg\n> - S-1-5-20 def.reg\n> - S-1-5-21 def.reg\n> - Default def.reg\n> - Mouse.reg\n> - HitBox.reg\n> - MouseKey.reg',
     downloadLink: 'https://r2.e-z.host/2825fb47-f8a4-472c-9624-df2489f897c0/tvdlljc4.zip'
   },
+  free_fixgpu: {
+    title: 'Fix GPU Emulators',
+    description: '```yaml\nFile Registry tự động fix lỗi GPU Emulators cho giả lập Bluestack 4 và Msi 4 ```\n`Chỉ sử dụng cho card NVIDIA, AMD không tác dụng`\n\n **Backup:**\n```HKEY_LOCAL_MACHINE\\SOFTWARE\\BlueStacks\\Config```\n > Cách sử dụng:',
+    dơnloadLink: 'https://r2.e-z.host/2825fb47-f8a4-472c-9624-df2489f897c0/8wxc8x5b.reg'
+  },
 };
 
 module.exports = freeproductInfo;
