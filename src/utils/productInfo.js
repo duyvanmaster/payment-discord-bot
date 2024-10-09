@@ -54,6 +54,10 @@ const productInfo = {
             title: 'Set High Application Performance Graphics Setting',
             emoji: '1286356371536613416',
         },
+        free_mousedefault: {
+            title: 'Set Mouse Default',
+            emoji: '1286356371536613416',
+        },
 
       },
   },
