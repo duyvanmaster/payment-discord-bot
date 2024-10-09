@@ -2,7 +2,6 @@ const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder
 const dotenv = require("dotenv");
 const payOS = require('./src/payos/payos');
 const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB } = require('./src/utils/mongodb');
-const keep_alive = require ('./keep_alive')
 const { updatePaymentStatusOnChannel } = require('./src/utils/statusonchanel');
 const qrcode = require('./src/handler/qrcode')
 const { getProductImageUrl } = require('./src/utils/productImages');
@@ -17,6 +16,7 @@ const mongoose = require('mongoose');
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -458,7 +458,7 @@ app.post("/payos-webhook", async (req, res) => {
       console.error("Invalid webhook data:", req.body);
       return res.status(400).send("Invalid webhook data");
     }
-    if (orderCode === 123 && amount === 10000 && description === "VQRIO123") {
+    if (orderCode === 123 && description === "VQRIO123") {
       return res.status(200).send("Webhook confirmed received");
     }
 
@@ -617,3 +617,7 @@ app.post("/payos-webhook", async (req, res) => {
 });
 
 client.login(process.env.TOKEN);
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
