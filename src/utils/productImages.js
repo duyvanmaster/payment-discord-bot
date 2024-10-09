@@ -12,7 +12,7 @@ function getProductImageUrl(product) {
             productImageUrl = 'https://media.discordapp.net/attachments/1152492381631942697/1286701026690203760/1266108773005529118.jpg?ex=66eedd36&is=66ed8bb6&hm=8dc339bb41d46d6b7b776727453e041e63705bf4776667c4410a50be4eb4b9dd&=&format=webp&width=819&height=184';
             break;
       case 'free_tweaks':
-        productImageUrl = 'https://cdn.discordapp.com/attachments/1284476739891761236/1290665791892492328/ezgif-4-9ae8608781.gif?ex=66fd49b0&is=66fbf830&hm=ed572ca76c269c00c695ccd9ef5e2e3fd3412c2c9688b8f3400d58318bf48bde&';
+        productImageUrl = 'https://media.discordapp.net/attachments/1286352610793619540/1293421247614685194/ezgif-4-41eeb7d381.gif?ex=67074fe8&is=6705fe68&hm=5bc12e4bfada6a5e8828516f2c40fbf52571ccf69556c6675f9c60fcb61f04e2&=&width=440&height=247';
         break;
       case 'free_ffx86':
         productImageUrl = 'https://cdn.discordapp.com/attachments/1152492381631942697/1285983416793432095/ezgif-4-9ae8608781.gif?ex=66ec40e2&is=66eaef62&hm=afc8c02e55b870585a1775a2a38370fc864472106a897e2afcde0fd546a23205&';

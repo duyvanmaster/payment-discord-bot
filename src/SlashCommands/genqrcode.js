@@ -4,6 +4,10 @@ require('dotenv').config();
 
 const commands = [
   {
+    name: 'legitvn',
+    description: 'Bảng giá hiệu ứng hồ sơ LegitVN',
+  },
+  {
     name: 'qrcode',
     description: 'Tạo mã QR cho ngân hàng sử dụng VietQR',
     options: [
