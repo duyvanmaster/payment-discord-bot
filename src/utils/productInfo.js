@@ -31,7 +31,7 @@ const productInfo = {
   },
   free: {
       title: 'Miễn phí',
-      description: '```yaml\nCác dịch vụ miễn phí của LegitVN```\n<a:arrow:1293222327126982737> **AIO LegitVN**\n<a:arrow:1293222327126982737> **FFX86**\n<a:arrow:1293222327126982737> **Tweaks**\n<a:arrow:1293222327126982737> **Set High All Priority**\n<a:arrow:1293222327126982737> **Set High Application Performance Graphics Setting**',
+      description: '```yaml\nCác dịch vụ miễn phí của LegitVN```\n<a:arrow:1293222327126982737> **AIO LegitVN**\n<a:arrow:1293222327126982737> **FFX86**\n<a:arrow:1293222327126982737> **Tweaks**\n<a:arrow:1293222327126982737> **Set High All Priority**\n<a:arrow:1293222327126982737> **Set High Application Performance Graphics Setting**\n<a:arrow:1293222327126982737>**Set Mouse Default**\n<a:arrow:1293222327126982737>**Fix GPU Emulators**\n<a:arrow:1293222327126982737>**Color Changer Pro**',
     emoji: '🎁',
       subProducts: {
         free_aiolegitvn: {
@@ -46,6 +46,14 @@ const productInfo = {
               title: 'Tweaks',
               emoji: '1290315746785759244',
           },
+          free_rootbstweaker: {
+            title: 'Root Bstweaker',
+            emoji: '1293913423356362834',
+        },
+          free_colorchanger: {
+            title: 'Color Changer Pro',
+            emoji: '1293912221243539490',
+        },
           free_highpriority: {
             title: 'Set High All Priority',
             emoji: '1286356371536613416',
@@ -62,6 +70,7 @@ const productInfo = {
             title: 'Fix GPU Emulators',
             emoji: '1286356371536613416',
         },
+
 
       },
   },
