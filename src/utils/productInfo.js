@@ -31,7 +31,7 @@ const productInfo = {
   },
   free: {
       title: 'Miễn phí',
-      description: '```yaml\nCác dịch vụ miễn phí của LegitVN```\n<a:arrow:1293222327126982737> **AIO LegitVN**\n<a:arrow:1293222327126982737> **FFX86**\n<a:arrow:1293222327126982737> **Tweaks**\n<a:arrow:1293222327126982737>**Root Bstweaker**\n<a:arrow:1293222327126982737>**Color Changer Pro**\n<a:arrow:1293222327126982737> **Set High All Priority**\n<a:arrow:1293222327126982737> **Set High Application Performance Graphics Setting**\n<a:arrow:1293222327126982737>**Set Mouse Default**\n<a:arrow:1293222327126982737>**Fix GPU Emulators**',
+      description: '```yaml\nCác dịch vụ miễn phí của LegitVN```\n<a:arrow:1293222327126982737> **AIO LegitVN**\n<a:arrow:1293222327126982737> **FFX86**\n<a:arrow:1293222327126982737> **Tweaks**\n<a:arrow:1293222327126982737> **Root Bstweaker**\n<a:arrow:1293222327126982737> **Color Changer Pro**\n<a:arrow:1293222327126982737> **Set High All Priority**\n<a:arrow:1293222327126982737> **Set High Application Performance Graphics Setting**\n<a:arrow:1293222327126982737> **Set Mouse Default**\n<a:arrow:1293222327126982737> **Fix GPU Emulators**',
     emoji: '🎁',
       subProducts: {
         free_aiolegitvn: {
