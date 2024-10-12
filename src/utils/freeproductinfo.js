@@ -39,7 +39,7 @@ const freeproductInfo = {
   free_colorchanger: {
     title: 'Color Changer Pro',
     description: '```yaml\nColor Changer Pro là phần mềm giúp bạn thay đổi màu sắc của màn hình giả lập một cách dễ dàng.```\n`Lưu ý: Root trước khi cài đặt Color Changer Pro`\n\n**Cài đặt:**\n1. Nhấn vào nút bên dưới để `tải file`\n2. Mở giả lập tùy chọn vào `Install APK`\n3. Chọn file `Color Changer Pro` đã tải về\n\n> [Video Hướng dẫn cụ thể](https://www.youtube.com/watch?v=lv5IhrKkVSA&t=5s)',
-    dơnloadLink: 'https://cdn.discordapp.com/attachments/1087667377816219719/1198213731352580156/Color-Changer-Pro-Apk-v1.11.apk?ex=6708feff&is=6707ad7f&hm=25d5639c7de2dc3610513a75376cc6d07bafa11a89834807cd3d57a654937eb4&'
+    dơnloadLink: 'https://r2.e-z.host/2825fb47-f8a4-472c-9624-df2489f897c0/gvbxvcpz.apk'
   },
   free_rootbstweaker: {
     title: 'Root Bstweaker',
