@@ -4,7 +4,7 @@ const freeproductInfo = {
   free_ffx86: {
     title: 'FFX86 OB46 Share By LegitVN',
     description: '```\nLoại file là APK, khả dụng với các giả lập phổ biến như Bluestacks và Msi Player.```\n`Xóa FreeFire gốc đã cài đặt trước đó để sử dụng FFx86.`\n\n**Cài đặt:**\n1. Nhấn vào nút bên dưới để `tải file`\n2. Mở giả lập tùy chọn vào `Install APK`\n3. Chọn file `FFx86` đã tải về\n\n> [Video hướng dẫn cụ thể](https://www.youtube.com/watch?v=g2XrPH1VMYM&t=20s)',
-    downloadLink: 'https://drive.usercontent.google.com/download?id=1oHfxmrH3r19OOAECJ50onPhHe0OrrFBo&export=download&authuser=0&confirm=t&uuid=d8be2673-dd81-411f-800f-6a2659c7479d&at=AO7h07dADQnc4xmPe5-MPmI9nnTN%3A1726661416939'
+    downloadLink: 'https://drive.usercontent.google.com/download?id=1oHfxmrH3r19OOAECJ50onPhHe0OrrFBo&export=download&authuser=0&confirm=t&uuid=d8be2673-dd81-411f-800f-6a2659c7479d&at=AN_67v3Jzt1wj8EIuhbZHOW77Syb%3A1728721302808'
   },
   free_tweaks: {
     title: 'Best Tweaks For Emulator',
