@@ -267,9 +267,9 @@ client.on('interactionCreate', async interaction => {
               .setTitle("Thông tin sản phẩm miễn phí")
               .setDescription('**Trạng thái:** ```diff\n+ Sản phẩm miễn phí đã được yêu cầu```')
               .addFields(
-                { name: "Mã đơn hàng", value: freeProductInfo.orderCode, inline: false },
                 { name: "ID người dùng", value: mentionableUser, inline: false },
-                { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: false }
+                { name: "Mã đơn hàng", value: `\`${freeProductInfo.orderCode}\``, inline: false },
+                { name: "Sản phẩm", value: `\`${selectedSubProduct}\``, inline: false }
               )
               .setTimestamp()
           ]
