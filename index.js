@@ -13,6 +13,7 @@ const path = require("path");
 const productInfo = require('./src/utils/productInfo');
 const { createTicket } = require('./src/handler/ticketManager');
 const mongoose = require('mongoose');
+const { userMention } = require('@discordjs/builders');
 dotenv.config();
 
 const app = express();
@@ -188,7 +189,7 @@ client.on('interactionCreate', async interaction => {
           .setTitle('ÔNG BỤT LEGITVN CHỌN GÌ CÓ ĐÓ')
           .setDescription('<a:arrow:1293222327126982737> Trang Web chính thức: [LegitVN](https://legitvn.com/)\n<a:arrow:1293222327126982737> Mọi vấn đề liên quan liên hệ: <@948239925701115914>')
           .setImage('https://cdn.discordapp.com/attachments/1161271813460996126/1204309215582232616/gamesensepricehigh.gif?ex=67061f5b&is=6704cddb&hm=b16470f4c08857c5a0a9690120a11fc7102ef15f0d49bf3abbef4dfe7422b022&')
-          .setFooter({ text: 'LegitVN | The best or nothing'})
+          .setFooter({ text: 'LegitVN | The best or nothing' })
           .setTimestamp(),
       ],
       components: [mainRow]
@@ -245,8 +246,17 @@ client.on('interactionCreate', async interaction => {
       const freeProductInfo = {
         product: selectedSubProduct,
         userId: interaction.user.id,
-        orderCode: `FREE-${Date.now()}`
+        orderCode: `FREE-${Date.now()}`,
       };
+
+      let mentionableUser;
+
+      try {
+        mentionableUser = userMention(interaction.user.id);
+      } catch (error) {
+        mentionableUser = interaction.user.username;
+      }
+
       pendingPayments[freeProductInfo.orderCode] = freeProductInfo;
 
       const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
@@ -257,8 +267,8 @@ client.on('interactionCreate', async interaction => {
               .setTitle("Thông tin sản phẩm miễn phí")
               .setDescription('**Trạng thái:** ```diff\n+ Sản phẩm miễn phí đã được yêu cầu```')
               .addFields(
-                { name: "Mã đơn hàng", value: freeProductInfo.orderCode, inline: true },
-                { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
+                { name: "Mã đơn hàng", value: freeProductInfo.orderCode, inline: false },
+                { name: "ID người dùng", value: mentionableUser, inline: false },
                 { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: false }
               )
               .setTimestamp()
@@ -600,7 +610,7 @@ app.post("/payos-webhook", async (req, res) => {
       await sentMessage.edit({ embeds: [updatedEmbed] });
 
       await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed');
-      
+
       await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed');
 
       //delete pendingPayments[orderCode];
