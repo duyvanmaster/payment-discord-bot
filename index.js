@@ -90,9 +90,10 @@ function createFreeProductEmbed(selectedSubProduct) {
   return { embed, components: [row] }; // Trả về embed và hàng chứa nút
 }
 
-// Xử lý thanh toán và tạo mã QR
 async function handlePayment(selectedSubProduct, interaction, body) {
   try {
+    await interaction.deferReply({ ephemeral: true });
+
     const paymentLinkResponse = await payOS.createPaymentLink(body);
     const qrCodeImageUrl = `https://img.vietqr.io/image/${paymentLinkResponse.bin
       }-${paymentLinkResponse.accountNumber}-vietqr_pro.jpg?amount=${paymentLinkResponse.amount
@@ -141,13 +142,13 @@ async function handlePayment(selectedSubProduct, interaction, body) {
       });
     }
 
-    await interaction.reply({
+    // Thay vì reply, sử dụng editReply sau khi xử lý xong
+    await interaction.editReply({
       embeds: [
         new EmbedBuilder()
           .setDescription('Đã gửi mã QR thanh toán qua DM của bạn!')
           .setColor(0x007AFF)
-      ],
-      ephemeral: true
+      ]
     });
 
     function delay(ms) {
@@ -160,15 +161,18 @@ async function handlePayment(selectedSubProduct, interaction, body) {
     return qrCodeImageUrl;
   } catch (error) {
     console.error("Lỗi khi tạo liên kết thanh toán:", error);
-    await interaction.reply({ content: "Đã xảy ra lỗi khi tạo liên kết thanh toán.", ephemeral: true });
+    // Chỉnh sửa lại reply khi có lỗi thay vì gọi lại interaction.reply()
+    await interaction.editReply({ content: "Đã xảy ra lỗi khi tạo liên kết thanh toán." });
     throw error;
   }
 }
+
 
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu()) return;
 
   if (interaction.isChatInputCommand() && interaction.commandName === 'legitvn') {
+    
     const mainOptions = Object.keys(productInfo).map(key => ({
       label: productInfo[key].title,
       value: key,
@@ -238,6 +242,7 @@ client.on('interactionCreate', async interaction => {
 
   if (interaction.isStringSelectMenu() && interaction.customId === 'select_sub_product') {
     const selectedSubProduct = interaction.values[0];
+    await interaction.deferReply({ ephemeral: true });
 
     if (selectedSubProduct.startsWith('free_')) {
       const { embed, components } = createFreeProductEmbed(selectedSubProduct);
@@ -257,6 +262,8 @@ client.on('interactionCreate', async interaction => {
         mentionableUser = interaction.user.username;
       }
 
+      const displayNameWithAt = `@${interaction.member ? interaction.member.displayName : interaction.user.username}`;
+      
       pendingPayments[freeProductInfo.orderCode] = freeProductInfo;
 
       const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
@@ -276,7 +283,7 @@ client.on('interactionCreate', async interaction => {
         });
       }
 
-      await interaction.reply({
+      await interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setDescription('Đã gửi thông tin sản phẩm miễn phí vào DM của bạn!')
