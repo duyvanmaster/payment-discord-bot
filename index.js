@@ -92,7 +92,10 @@ function createFreeProductEmbed(selectedSubProduct) {
 
 async function handlePayment(selectedSubProduct, interaction, body) {
   try {
-    await interaction.deferReply({ ephemeral: true });
+    // Kiểm tra nếu deferReply đã được gọi trước đó
+    if (!interaction.deferred) {
+      await interaction.deferReply({ ephemeral: true });
+    }
 
     const paymentLinkResponse = await payOS.createPaymentLink(body);
     const qrCodeImageUrl = `https://img.vietqr.io/image/${paymentLinkResponse.bin
@@ -151,6 +154,7 @@ async function handlePayment(selectedSubProduct, interaction, body) {
       ]
     });
 
+    // Xử lý lưu trữ thông tin thanh toán và trạng thái sau khi chờ 3 giây
     function delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -161,11 +165,13 @@ async function handlePayment(selectedSubProduct, interaction, body) {
     return qrCodeImageUrl;
   } catch (error) {
     console.error("Lỗi khi tạo liên kết thanh toán:", error);
+
     // Chỉnh sửa lại reply khi có lỗi thay vì gọi lại interaction.reply()
     await interaction.editReply({ content: "Đã xảy ra lỗi khi tạo liên kết thanh toán." });
     throw error;
   }
 }
+
 
 
 client.on('interactionCreate', async interaction => {
