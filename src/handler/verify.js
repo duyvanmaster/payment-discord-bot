@@ -11,14 +11,7 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.commandName === 'verify') {
         const member = interaction.member;
-        // In ra thông tin về các roles mà người dùng có
-        console.log('Roles cache:', member.roles.cache.map(role => `${role.id}: ${role.name}`));
-
-        // In ra ID role đang kiểm tra
-        console.log('Checking role ID:', '1297503839749935159');
-
-        // Kiểm tra role ID
-        if (member.roles.cache.has('1297503839749935159')) {  // Kiểm tra role ID trực tiếp
+        if (member.roles.cache.has('1073963519231397908')) {
             console.log('User has the role!');
             const embed = new EmbedBuilder()
                 .setTitle('Xác minh giúp mình nha!!!')

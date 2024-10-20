@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const payOS = require('./src/payos/payos');
 const { updatePaymentStatusOnChannel } = require('./src/utils/statusonchanel');
 const qrcode = require('./src/handler/qrcode')
+const verify = require('./src/handler/verify')
 const SlashCommands = require('./src/SlashCommands/slashcommands')
 const { getProductImageUrl } = require('./src/utils/productImages');
 const productPrices = require('./src/utils/productPrices');
