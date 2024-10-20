@@ -1,9 +1,9 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require("discord.js");
 const dotenv = require("dotenv");
 const payOS = require('./src/payos/payos');
-const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB } = require('./src/utils/mongodb');
 const { updatePaymentStatusOnChannel } = require('./src/utils/statusonchanel');
 const qrcode = require('./src/handler/qrcode')
+const SlashCommands = require('./src/SlashCommands/slashcommands')
 const { getProductImageUrl } = require('./src/utils/productImages');
 const productPrices = require('./src/utils/productPrices');
 const freeproductInfo = require('./src/utils/freeproductinfo');
@@ -13,6 +13,7 @@ const path = require("path");
 const productInfo = require('./src/utils/productInfo');
 const { createTicket } = require('./src/handler/ticketManager');
 const mongoose = require('mongoose');
+const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB } = require('./src/utils/mongodb');
 const { userMention } = require('@discordjs/builders');
 dotenv.config();
 
