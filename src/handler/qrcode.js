@@ -37,78 +37,69 @@ const bankNames = {
   '970425': 'ABBANK'
 };
 
-// Khởi tạo bot client
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-client.once('ready', () => {
-  console.log('Bot is ready!');
-});
+// client.once('ready', () => {
+//   console.log('Bot is ready!');
+// });
 
-// Xử lý sự kiện slash command
 client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
 
   const { commandName } = interaction;
 
   if (commandName === 'qrcode') {
-    const bank = interaction.options.getString('bank');
-    const accountNumber = interaction.options.getString('account');
-    const accountName = interaction.options.getString('accountname');
-    const amount = interaction.options.getInteger('amount');
-    const memo = interaction.options.getString('memo');
-    const template = interaction.options.getString('template') || 'compact';
-    const media = interaction.options.getString('media') || 'jpg';
+      const bank = interaction.options.getString('bank');
+      const accountNumber = interaction.options.getString('account');
+      const accountName = interaction.options.getString('accountname');
+      const amount = interaction.options.getInteger('amount');
+      const memo = interaction.options.getString('memo');
+      // const template = interaction.options.getString('template') || 'compact';
+      // const media = interaction.options.getString('media') || 'jpg';
 
-    // Tạo dữ liệu yêu cầu cho PayOS
-    const body = {
-      bank,
-      accountName,
-      accountNumber,
-      amount,
-      description: memo || '',
-      template,
-      media,
-      orderCode: Number(String(Date.now()).slice(-6)),
-      returnUrl: `${process.env.YOUR_DOMAIN}/success.html`,
-      cancelUrl: `${process.env.YOUR_DOMAIN}/cancel.html`,
-    };
+      const body = {
+        bank,
+        accountName,
+        accountNumber,
+        amount,
+        description: memo || '',
+        // template,
+        // media,
+        orderCode: Number(String(Date.now()).slice(-6)),
+        returnUrl: `${process.env.YOUR_DOMAIN}/success.html`,
+        cancelUrl: `${process.env.YOUR_DOMAIN}/cancel.html`,
+      };
 
-    try {
-      // Tạo liên kết thanh toán qua PayOS
-      const paymentLinkResponse = await payOS.createPaymentLink(body);
+      try {
+        const paymentLinkResponse = await payOS.createPaymentLink(body);
+        const qrCodeImageUrl = `https://img.vietqr.io/image/${paymentLinkResponse.bin
+          }-${paymentLinkResponse.accountNumber}-vietqr_pro.jpg?amount=${paymentLinkResponse.amount
+          }&addInfo=${encodeURIComponent(paymentLinkResponse.description)}`;
 
-      // Tạo URL ảnh QR từ phản hồi của PayOS
-      const qrCodeImageUrl = `https://img.vietqr.io/image/${
-        paymentLinkResponse.bin
-      }-${paymentLinkResponse.accountNumber}-vietqr_pro.jpg?amount=${
-        paymentLinkResponse.amount
-      }&addInfo=${encodeURIComponent(paymentLinkResponse.description)}`;
+        body.checkoutUrl = paymentLinkResponse.checkoutUrl;
 
-      body.checkoutUrl = paymentLinkResponse.checkoutUrl;
+        const embed = new EmbedBuilder()
+          .setDescription('**Trạng thái thanh toán:** ```\nChưa hoàn tất thanh toán```')
+          .addFields(
+            { name: "Ngân hàng", value: `${bankNames[bank] || 'Unknown Bank'}`, inline: true },
+            { name: "Số tài khoản", value: `${accountNumber}`, inline: true },
+            { name: "Tên tài khoản", value: `${accountName}`, inline: true },
+            { name: "Số tiền", value: `${amount} VND`, inline: true },
+            { name: "Nội dung", value: `${memo || 'N/A'}`, inline: true },
+            { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true }
+          )
+          .setImage(qrCodeImageUrl)
+          .setTimestamp();
 
-      // Tạo Embed ban đầu
-      const embed = new EmbedBuilder()
-        .setDescription('**Trạng thái thanh toán:** ```\nChưa hoàn tất thanh toán```')
-        .addFields(
-          { name: "Ngân hàng", value: `${bankNames[bank] || 'Unknown Bank'}`, inline: true },
-          { name: "Số tài khoản", value: `${accountNumber}`, inline: true },
-          { name: "Tên tài khoản", value: `${accountName}`, inline: true },
-          { name: "Số tiền", value: `${amount} VND`, inline: true },
-          { name: "Nội dung", value: `${memo || 'N/A'}`, inline: true },
-          { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true }
-        )
-        .setImage(qrCodeImageUrl) // Gắn ảnh QR vào embed
-        .setTimestamp();
+        await interaction.reply({ embeds: [embed] });
 
-      // Gửi Embed về kênh Discord
-      await interaction.reply({ embeds: [embed] });
-
-    } catch (err) {
-      console.error(err);
-      await interaction.reply('Đã xảy ra lỗi khi tạo liên kết thanh toán.');
+      } catch (err) {
+        console.error(err);
+        await interaction.reply('Đã xảy ra lỗi khi tạo liên kết thanh toán.');
+      }
     }
-  }
 });
+
 
 // Xử lý webhook từ PayOS
 // app.post("/payos-webhook", async (req, res) => {

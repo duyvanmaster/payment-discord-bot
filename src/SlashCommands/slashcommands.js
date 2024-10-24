@@ -64,27 +64,27 @@ const commands = [
                 description: 'Ghi chú',
                 required: false
             },
-            {
-                name: 'template',
-                type: 3, // STRING
-                description: 'Template QR code (e.g., compact, standard)',
-                required: false,
-                choices: [
-                    { name: 'Compact', value: 'compact' },
-                    { name: 'Qr Only', value: 'qr_only' },
-                    { name: 'Print', value: 'print' }
-                ]
-            },
-            {
-                name: 'media',
-                type: 3, // STRING
-                description: 'Loại media (e.g., .jpg, .png)',
-                required: false,
-                choices: [
-                    { name: 'JPG', value: '.jpg' },
-                    { name: 'PNG', value: '.png' }
-                ]
-            }
+            // {
+            //     name: 'template',
+            //     type: 3, // STRING
+            //     description: 'Template QR code (e.g., compact, standard)',
+            //     required: false,
+            //     choices: [
+            //         { name: 'Compact', value: 'compact' },
+            //         { name: 'Qr Only', value: 'qr_only' },
+            //         { name: 'Print', value: 'print' }
+            //     ]
+            // },
+            // {
+            //     name: 'media',
+            //     type: 3, // STRING
+            //     description: 'Loại media (e.g., .jpg, .png)',
+            //     required: false,
+            //     choices: [
+            //         { name: 'JPG', value: '.jpg' },
+            //         { name: 'PNG', value: '.png' }
+            //     ]
+            // }
         ]
     },
     {
@@ -95,15 +95,30 @@ const commands = [
         name: 'verify',
         description: 'Xác minh công dân',
     },
+    {
+        name: 'sendmessage',
+        description: 'Gửi tin nhắn tới người dùng dựa trên ID của họ',
+        options: [
+            {
+                name: 'user_ids',
+                type: 3, // 3 là chuỗi
+                description: 'Danh sách ID người dùng, phân cách bởi dấu phẩy',
+                required: true,
+            }
+        ]
+    }
 ];
 
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
-(async (async) => {
+(async () => {
     try {
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: commands });
+        // Xóa tất cả global commands
+        // await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
+        // console.log('Đã xóa tất cả global commands!');
     } catch (error) {
-        console.error(error);
+        console.error('Lỗi khi xóa commands:', error);
     }
 })();

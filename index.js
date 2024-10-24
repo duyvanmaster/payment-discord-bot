@@ -4,18 +4,15 @@ const payOS = require('./src/payos/payos');
 const { updatePaymentStatusOnChannel } = require('./src/utils/statusonchanel');
 const qrcode = require('./src/handler/qrcode')
 const verify = require('./src/handler/verify')
-const SlashCommands = require('./src/SlashCommands/slashcommands')
-const { getProductImageUrl } = require('./src/utils/productImages');
-const productPrices = require('./src/utils/productPrices');
-const freeproductInfo = require('./src/utils/freeproductinfo');
+const sendmessage = require('./src/handler/sendmessage')
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const productInfo = require('./src/utils/productInfo');
 const { createTicket } = require('./src/handler/ticketManager');
 const mongoose = require('mongoose');
 const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB } = require('./src/utils/mongodb');
 const { userMention } = require('@discordjs/builders');
+const { getProductInfo } = require('./src/firebase/firebaseService'); // Lấy dữ liệu từ Firebase
 dotenv.config();
 
 const app = express();
@@ -41,7 +38,6 @@ client.on('ready', () => {
   });
 });
 
-// Hàm gửi DM cho người dùng
 async function sendDM(userId, { embed, components }) {
   try {
     const user = await client.users.fetch(userId);
@@ -53,11 +49,10 @@ async function sendDM(userId, { embed, components }) {
   }
 }
 
-// Tạo embed cho sản phẩm miễn phí
-function createFreeProductEmbed(selectedSubProduct) {
-
-  // Kiểm tra nếu sản phẩm tồn tại trong freeproductInfo
-  const product = freeproductInfo[selectedSubProduct];
+// Cập nhật chức năng lấy thông tin sản phẩm từ Firebase
+async function createFreeProductEmbed(selectedSubProduct) {
+  const products = await getProductInfo();  // Lấy dữ liệu từ Firebase
+  const product = products.freeproductInfo[selectedSubProduct];
   if (!product) {
     return {
       embed: new EmbedBuilder()
@@ -69,27 +64,24 @@ function createFreeProductEmbed(selectedSubProduct) {
     };
   }
 
-  // Tạo nút mở link
   const linkButton = new ButtonBuilder()
     .setLabel('Tải xuống')
     .setURL(product.downloadLink || 'https://discord.gg/legitvn')
     .setStyle(ButtonStyle.Link);
 
-  // Tạo hàng chứa nút
   const row = new ActionRowBuilder().addComponents(linkButton);
 
-  // Tạo embed cho sản phẩm
   const embed = new EmbedBuilder()
     .setTitle(product.title || 'Không có tiêu đề')
     .setDescription(product.description || 'Không có mô tả')
-    .setImage(getProductImageUrl(selectedSubProduct))
+    .setImage(product.imageUrl)
     .setFooter({
       text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!",
       iconURL: 'https://r2.e-z.host/2825fb47-f8a4-472c-9624-df2489f897c0/rf2o4ffc.png'
     })
     .setTimestamp();
 
-  return { embed, components: [row] }; // Trả về embed và hàng chứa nút
+  return { embed, components: [row] };
 }
 
 async function handlePayment(selectedSubProduct, interaction, body) {
@@ -105,7 +97,6 @@ async function handlePayment(selectedSubProduct, interaction, body) {
       }&addInfo=${encodeURIComponent(paymentLinkResponse.description)}`;
     body.checkoutUrl = paymentLinkResponse.checkoutUrl;
 
-    // Tạo Embed ban đầu
     const embed = new EmbedBuilder()
       .setDescription('**Trạng thái thanh toán:**\n```Chưa hoàn tất thanh toán```')
       .addFields(
@@ -141,13 +132,13 @@ async function handlePayment(selectedSubProduct, interaction, body) {
               { name: "URL mã QR", value: `[Thanh toán QRCode](${qrCodeImageUrl})` },
               { name: "Liên kết thanh toán", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false }
             )
-            .setImage(getProductImageUrl(selectedSubProduct))
+            .setImage(qrCodeImageUrl)
             .setTimestamp()
         ]
       });
     }
 
-    // Thay vì reply, sử dụng editReply sau khi xử lý xong
+    // Dùng Edit Reply để xử lí bất đồng bộ
     await interaction.editReply({
       embeds: [
         new EmbedBuilder()
@@ -156,61 +147,62 @@ async function handlePayment(selectedSubProduct, interaction, body) {
       ]
     });
 
-    // Xử lý lưu trữ thông tin thanh toán và trạng thái sau khi chờ 3 giây
-    function delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    await delay(3000);
     await savePaymentToDB(body, selectedSubProduct, interaction, sentMessage);
 
     return qrCodeImageUrl;
   } catch (error) {
     console.error("Lỗi khi tạo liên kết thanh toán:", error);
 
-    // Chỉnh sửa lại reply khi có lỗi thay vì gọi lại interaction.reply()
     await interaction.editReply({ content: "Đã xảy ra lỗi khi tạo liên kết thanh toán." });
     throw error;
   }
 }
 
-
-
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand() && !interaction.isStringSelectMenu()) return;
 
   if (interaction.isChatInputCommand() && interaction.commandName === 'legitvn') {
-    
-    const mainOptions = Object.keys(productInfo).map(key => ({
-      label: productInfo[key].title,
-      value: key,
-      emoji: productInfo[key].emoji,
-    }));
+    const member = interaction.member;
+    const guildOwnerId = interaction.guild.ownerId;
 
-    const mainRow = new ActionRowBuilder()
-      .addComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId('select_product')
-          .setPlaceholder('CHỌN DỊCH VỤ')
-          .addOptions(mainOptions)
-      );
+    const products = await getProductInfo();  // Lấy dữ liệu từ Firebase
 
-    await interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle('ÔNG BỤT LEGITVN CHỌN GÌ CÓ ĐÓ')
-          .setDescription('<a:arrow:1293222327126982737> Trang Web chính thức: [LegitVN](https://legitvn.com/)\n<a:arrow:1293222327126982737> Mọi vấn đề liên quan liên hệ: <@948239925701115914>')
-          .setImage('https://cdn.discordapp.com/attachments/1161271813460996126/1204309215582232616/gamesensepricehigh.gif?ex=67061f5b&is=6704cddb&hm=b16470f4c08857c5a0a9690120a11fc7102ef15f0d49bf3abbef4dfe7422b022&')
-          .setFooter({ text: 'LegitVN | The best or nothing' })
-          .setTimestamp(),
-      ],
-      components: [mainRow]
-    });
+    if (member.id === guildOwnerId) {
+      const mainOptions = Object.keys(products.productInfo).map(key => ({
+        label: products.productInfo[key].title,
+        value: key,
+        emoji: products.productInfo[key].emoji,
+      }));
+
+      const mainRow = new ActionRowBuilder()
+        .addComponents(
+          new StringSelectMenuBuilder()
+            .setCustomId('select_product')
+            .setPlaceholder('CHỌN DỊCH VỤ')
+            .addOptions(mainOptions)
+        );
+
+      await interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle('ÔNG BỤT LEGITVN CHỌN GÌ CÓ ĐÓ')
+            .setDescription('<a:arrow:1293222327126982737> Trang Web chính thức: [LegitVN](https://legitvn.com/)\n<a:arrow:1293222327126982737> Mọi vấn đề liên quan liên hệ: <@948239925701115914>')
+            .setImage('https://cdn.discordapp.com/attachments/1161271813460996126/1204309215582232616/gamesensepricehigh.gif?ex=67061f5b&is=6704cddb&hm=b16470f4c08857c5a0a9690120a11fc7102ef15f0d49bf3abbef4dfe7422b022&')
+            .setFooter({ text: 'LegitVN | The best or nothing' })
+            .setTimestamp(),
+        ],
+        components: [mainRow]
+      });
+    }
+    else {
+      await interaction.reply({ content: 'Bạn không có quyền để sử dụng lệnh này.', ephemeral: true });
+    }
   }
 
   if (interaction.isStringSelectMenu() && interaction.customId === 'select_product') {
     const selectedProduct = interaction.values[0];
-    const productDetails = productInfo[selectedProduct];
+    const products = await getProductInfo();  // Lấy dữ liệu từ Firebase
+    const productDetails = products.productInfo[selectedProduct];
 
     if (!productDetails) {
       await interaction.reply({
@@ -240,7 +232,7 @@ client.on('interactionCreate', async interaction => {
         new EmbedBuilder()
           .setTitle(productDetails.title)
           .setDescription(productDetails.description)
-          .setImage(getProductImageUrl(selectedProduct))
+          .setImage(productDetails.imageUrl)
           .setTimestamp(),
       ],
       components: [subMenuRow],
@@ -250,10 +242,12 @@ client.on('interactionCreate', async interaction => {
 
   if (interaction.isStringSelectMenu() && interaction.customId === 'select_sub_product') {
     const selectedSubProduct = interaction.values[0];
+    const products = await getProductInfo();  // Lấy dữ liệu từ Firebase
+
     await interaction.deferReply({ ephemeral: true });
 
     if (selectedSubProduct.startsWith('free_')) {
-      const { embed, components } = createFreeProductEmbed(selectedSubProduct);
+      const { embed, components } = await createFreeProductEmbed(selectedSubProduct);
       await sendDM(interaction.user.id, { embed, components });
 
       const freeProductInfo = {
@@ -271,7 +265,7 @@ client.on('interactionCreate', async interaction => {
       }
 
       const displayNameWithAt = `@${interaction.member ? interaction.member.displayName : interaction.user.username}`;
-      
+
       pendingPayments[freeProductInfo.orderCode] = freeProductInfo;
 
       const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
@@ -303,8 +297,9 @@ client.on('interactionCreate', async interaction => {
       await saveFreeProductToDB(freeProductInfo, interaction);
 
     } else {
-      const parentProduct = Object.keys(productInfo).find(productKey => {
-        return productInfo[productKey].subProducts && productInfo[productKey].subProducts[selectedSubProduct];
+      const products = await getProductInfo();  // Lấy dữ liệu từ Firebase
+      const parentProduct = Object.keys(products.productInfo).find(productKey => {
+        return products.productInfo[productKey].subProducts && products.productInfo[productKey].subProducts[selectedSubProduct];
       });
 
       if (!parentProduct) {
@@ -315,9 +310,7 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
-
-
-      const subProductDetails = productInfo[parentProduct].subProducts[selectedSubProduct];
+      const subProductDetails = products.productInfo[parentProduct].subProducts[selectedSubProduct];
 
       if (!subProductDetails) {
         await interaction.reply({
@@ -327,7 +320,6 @@ client.on('interactionCreate', async interaction => {
         return;
       }
 
-      // Kiểm tra nếu subProduct có subProducts con
       if (subProductDetails.subProducts) {
         let subSubOptions = Object.keys(subProductDetails.subProducts).map(subSubProductKey => ({
           label: subProductDetails.subProducts[subSubProductKey].title,
@@ -348,16 +340,14 @@ client.on('interactionCreate', async interaction => {
           embeds: [
             new EmbedBuilder()
               .setTitle(subProductDetails.title)
-              //.setDescription('Chọn dịch vụ con từ danh sách dưới đây.')
-              .setImage(getProductImageUrl(selectedSubProduct))
+              .setImage(subProductDetails.imageUrl)
           ],
           components: [subSubMenuRow],
           ephemeral: true,
         });
       } else {
-        // Nếu chỉ có một sản phẩm con, thực hiện thanh toán ngay lập tức
         const orderCode = Number(String(Date.now()).slice(-6));
-        const productPrice = productPrices[selectedSubProduct] || 10000;
+        const productPrice = products.productPrices[selectedSubProduct] || 10000;
 
         const body = {
           orderCode,
@@ -370,103 +360,6 @@ client.on('interactionCreate', async interaction => {
         const qrCodeImageUrl = await handlePayment(selectedSubProduct, interaction, body);
       }
     }
-  }
-
-  if (interaction.isStringSelectMenu() && interaction.customId === 'select_sub_sub_product') {
-    const selectedSubSubProduct = interaction.values[0];
-
-    // Tìm sản phẩm cha cho sub-sub-product
-    const parentProduct = Object.keys(productInfo).find(productKey => {
-      const product = productInfo[productKey];
-      return product.subProducts && Object.keys(product.subProducts).some(subProductKey =>
-        product.subProducts[subProductKey].subProducts && product.subProducts[subProductKey].subProducts[selectedSubSubProduct]
-      );
-    });
-
-    // Nếu không tìm thấy sản phẩm cha
-    if (!parentProduct) {
-      await interaction.reply({
-        content: 'Sản phẩm không hợp lệ. Vui lòng thử lại.',
-        ephemeral: true,
-      });
-      return;
-    }
-
-    // Tìm subProductDetails từ sản phẩm cha
-    const subProductKey = Object.keys(productInfo[parentProduct].subProducts).find(subProductKey =>
-      productInfo[parentProduct].subProducts[subProductKey].subProducts && productInfo[parentProduct].subProducts[subProductKey].subProducts[selectedSubSubProduct]
-    );
-
-    const subProductDetails = productInfo[parentProduct].subProducts[subProductKey].subProducts[selectedSubSubProduct];
-
-    if (!subProductDetails) {
-      await interaction.reply({
-        content: 'Lựa chọn không hợp lệ. Vui lòng thử lại.',
-        ephemeral: true,
-      });
-      return;
-    }
-
-    // Kiểm tra xem subProductDetails có subProducts không
-    if (subProductDetails.subProducts) {
-      let subSubSubOptions = Object.keys(subProductDetails.subProducts).map(subSubSubProductKey => ({
-        label: subProductDetails.subProducts[subSubSubProductKey].title,
-        value: subSubSubProductKey,
-        emoji: subProductDetails.subProducts[subSubSubProductKey].emoji,
-        description: subProductDetails.subProducts[subSubSubProductKey].description,
-      }));
-
-      const subSubSubMenuRow = new ActionRowBuilder()
-        .addComponents(
-          new StringSelectMenuBuilder()
-            .setCustomId('select_sub_sub_sub_product')
-            .setPlaceholder('Chọn hiệu ứng muốn mua')
-            .addOptions(subSubSubOptions)
-        );
-
-      await interaction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setTitle(subProductDetails.title)
-            //.setDescription('Chọn dịch vụ con từ danh sách dưới đây.')
-            .setImage(getProductImageUrl(selectedSubSubProduct))
-        ],
-        components: [subSubSubMenuRow],
-        ephemeral: true,
-      });
-    } else {
-      // Thực hiện thanh toán ngay lập tức nếu không còn subProducts
-      const orderCode = Number(String(Date.now()).slice(-6));
-      const productPrice = productPrices[selectedSubSubProduct] || 10000;
-
-      const body = {
-        orderCode,
-        amount: productPrice,
-        description: selectedSubSubProduct,
-        returnUrl: `${process.env.YOUR_DOMAIN}/success.html`,
-        cancelUrl: `${process.env.YOUR_DOMAIN}/cancel.html`,
-      };
-
-      const qrCodeImageUrl = await handlePayment(selectedSubSubProduct, interaction, body);
-    }
-  }
-
-  if (interaction.isStringSelectMenu() && interaction.customId === 'select_sub_sub_sub_product') {
-    const selectedSubSubSubProduct = interaction.values[0];
-
-    // Thực hiện thanh toán ngay lập tức nếu đã đến cấp độ cuối cùng
-    const orderCode = Number(String(Date.now()).slice(-6));
-    const productPrice = productPrices[selectedSubSubSubProduct] || 10000;
-
-    const body = {
-      orderCode,
-      amount: productPrice,
-      description: selectedSubSubSubProduct,
-      returnUrl: `${process.env.YOUR_DOMAIN}/success.html`,
-      cancelUrl: `${process.env.YOUR_DOMAIN}/cancel.html`,
-    };
-
-    const qrCodeImageUrl = await handlePayment(selectedSubSubSubProduct, interaction, body);
   }
 });
 
@@ -501,7 +394,6 @@ app.post("/payos-webhook", async (req, res) => {
       const dmChannel = await user.createDM();
       const sentMessage = await dmChannel.messages.fetch(messageId);
 
-      // Kiểm tra xem file key có tồn tại không
       if (!fs.existsSync(keyFilePath)) {
         console.error("File key không tồn tại:", keyFilePath);
 
@@ -521,7 +413,6 @@ app.post("/payos-webhook", async (req, res) => {
           ]
         });
 
-        // Cập nhật MongoDB sau khi xử lý không thành công (không có key)
         await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_no_key');
         await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed_no_key');
         return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do không tồn tại file key");
@@ -552,7 +443,6 @@ app.post("/payos-webhook", async (req, res) => {
           ]
         });
 
-        // Cập nhật MongoDB khi có lỗi đọc file key
         await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_key_error');
         return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do lỗi khi đọc file key");
       }
@@ -576,7 +466,6 @@ app.post("/payos-webhook", async (req, res) => {
           ]
         });
 
-        // Cập nhật MongoDB khi không có key khả dụng
         await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_no_key_available');
         await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed_no_key_available');
         return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do không còn key khả dụng");
@@ -605,7 +494,6 @@ app.post("/payos-webhook", async (req, res) => {
           ]
         });
 
-        // Cập nhật MongoDB khi có lỗi ghi key
         await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_key_save_error');
         await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed_key_save_error');
         return res.status(500).send("Lỗi khi lưu file key");
@@ -628,7 +516,6 @@ app.post("/payos-webhook", async (req, res) => {
 
       await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed');
 
-      //delete pendingPayments[orderCode];
       return res.status(200).send(`Thanh toán cho đơn hàng ${orderCode} đã hoàn tất và ticket đã được tạo`);
 
     } else {

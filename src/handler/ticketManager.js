@@ -1,4 +1,5 @@
 const { PermissionsBitField, EmbedBuilder } = require('discord.js');
+require('dotenv').config();
 
 /**
  * Hàm để tạo một kênh ticket trong server
@@ -9,10 +10,8 @@ const { PermissionsBitField, EmbedBuilder } = require('discord.js');
  */
 async function createTicket(client, guild, user) {
   try {
-    // Tìm category channel dành cho ticket (nếu có)
     const category = guild.channels.cache.find(c => c.name === "CustomerTickets" && c.type === 4); // 4 = category type
 
-    // Tạo kênh ticket trong category đó hoặc trong server
     const channel = await guild.channels.create({
       name: `ticket-${user.username}`,
       type: 0, // 0 = text channel type
@@ -27,17 +26,16 @@ async function createTicket(client, guild, user) {
           allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
         },
         {
-          id: '1073890692608311336', // Đặt quyền cho vai trò hỗ trợ (cập nhật ID vai trò hỗ trợ)
+          id: process.env.SUPPORTROLE_ID, // Đặt quyền cho vai trò hỗ trợ (cập nhật ID vai trò hỗ trợ)
           allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
         },
         {
-          id: '1205709275197079582', // Đặt quyền cho vai trò hỗ trợ (cập nhật ID vai trò hỗ trợ)
+          id: process.env.BOTROLE_ID, // Đặt quyền cho vai trò bot
           allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.EmbedLinks],
         }
       ],
     });
 
-    // Tạo Embed
     const embed = new EmbedBuilder()
       .setTitle("Thanh toán thành công")
       .setDescription(`Xin chào ${user}, Vui lòng chờ trong giây lát đội ngũ hộ trợ sẽ đến ngay.`)
@@ -48,7 +46,6 @@ async function createTicket(client, guild, user) {
       .setColor(0x00FF00)
       .setTimestamp();
 
-    // Gửi Embed trong kênh mới tạo
     await channel.send({ embeds: [embed] });
 
     return channel;
