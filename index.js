@@ -4,6 +4,7 @@ const payOS = require('./src/payos/payos');
 const { updatePaymentStatusOnChannel } = require('./src/utils/statusonchanel');
 const qrcode = require('./src/handler/qrcode')
 const verify = require('./src/handler/verify')
+const reply = require('./src/handler/reply')
 const sendmessage = require('./src/handler/sendmessage')
 const express = require("express");
 const fs = require("fs");
