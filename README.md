@@ -44,7 +44,7 @@ Welcome to the Payment Discord Bot project! This bot is designed to help manage 
    - Go to the [Firebase Console](https://console.firebase.google.com/).
    - Create a new project and add a web app.
    - Obtain your Firebase configuration and add it to your `.env` file.
-   - Import file [realtime-databse](https://github.com/duyvanmaster/payment-discord-bot/blob/master/realtime-database.json) into Firebase Realtime Database
+   - Import file [realtime-databse.json](https://github.com/duyvanmaster/payment-discord-bot/blob/master/realtime-database.json) into Firebase Realtime Database
 
 7. **Set up the payment gateway:**
 
