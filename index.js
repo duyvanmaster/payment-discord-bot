@@ -13,7 +13,7 @@ const { createTicket } = require('./src/handler/ticketManager');
 const mongoose = require('mongoose');
 const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB } = require('./src/utils/mongodb');
 const { userMention } = require('@discordjs/builders');
-const { getProductInfo } = require('./src/firebase/firebaseService'); // Lấy dữ liệu từ Firebase
+const { getProductInfo } = require('./src/firebase/firebaseService');
 dotenv.config();
 
 const app = express();

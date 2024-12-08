@@ -1,0 +1,43 @@
+{
+  "products": {
+    "freeproductInfo": {
+      "free_aiolegitvn": {
+        "description": "mô tả của sản phẩm miễn phí",
+        "downloadLink": "link tải của sản phẩm",
+        "imageUrl": "ảnh trong embed của sản phẩm miễn phí",
+        "title": "Tiêu đề"
+      }
+    },
+    "productInfo": {
+      "free": {
+        "title": "Miễn phí",
+        "description": "mô tả về embed khi lựa chọn mục free của embed chính",
+        "emoji": "🎁",
+        "imageUrl": "ảnh của embed miễn phí",
+        "subProducts": {
+          "free_aiolegitvn": {
+            "title": "tiêu đề mục option",
+            "description": "mô tả của mục option",
+            "emoji": "id của mục option"
+          }
+        }
+      },
+      "optimize": {
+        "title": "Tối ưu giả lập",
+        "description": "mô tả về sản phẩm bán",
+        "emoji": "id",
+        "imageUrl": "ảnh sản phẩm",
+        "subProducts": {
+          "toi_uu_gia_lap": {
+            "title": "tiêu đề mục option",
+            "description": "mô tả của mục option",
+            "emoji": "id của mục option"
+          }
+        }
+      }
+    },
+    "productPrices": {
+      "toi_uu_gia_lap": 150000
+    }
+  }
+}
