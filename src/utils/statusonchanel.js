@@ -38,9 +38,9 @@ async function updatePaymentStatusOnChannel(client, orderCode, product, amount, 
             .setTitle('Hoàn tất thanh toán')
             .setDescription(`**Trạng thái thanh toán:** ${description}`)
             .addFields(
-              { name: "Sản phẩm", value: `${getProductDisplayName(product)}`, inline: true },
-              { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-              { name: "Số tiền", value: `${amount} VND`, inline: true },
+              { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true },
+              { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
+              { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
               { name: "ID người dùng", value: `<@${userId}>`, inline: true }
             )
             .setColor(0x00FF00)

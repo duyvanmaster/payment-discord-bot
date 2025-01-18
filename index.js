@@ -129,10 +129,10 @@ async function handlePayment(selectedSubProduct, interaction, body) {
               { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
               { name: "Số tiền", value: `${body.amount} VND`, inline: true },
               { name: "Sản phẩm", value: `**\`${getProductDisplayName(selectedSubProduct)}\`**`, inline: false },
-              { name: "URL mã QR", value: `[Thanh toán QRCode](${qrCodeImageUrl})` },
+              // { name: "URL mã QR", value: `[Thanh toán QRCode](${qrCodeImageUrl})` },
               { name: "Liên kết thanh toán", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false }
             )
-            .setImage(qrCodeImageUrl)
+            // .setImage(qrCodeImageUrl)
             .setTimestamp()
         ]
       });
