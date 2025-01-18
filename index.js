@@ -14,10 +14,11 @@ const mongoose = require('mongoose');
 const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB } = require('./src/utils/mongodb');
 const { userMention } = require('@discordjs/builders');
 const { getProductInfo } = require('./src/firebase/firebaseService');
+const { getProductDisplayName } = require('./src/utils/productname')
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3030;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -85,6 +86,7 @@ async function createFreeProductEmbed(selectedSubProduct) {
   return { embed, components: [row] };
 }
 
+
 async function handlePayment(selectedSubProduct, interaction, body) {
   try {
     // Kiểm tra nếu deferReply đã được gọi trước đó
@@ -98,24 +100,21 @@ async function handlePayment(selectedSubProduct, interaction, body) {
       }&addInfo=${encodeURIComponent(paymentLinkResponse.description)}`;
     body.checkoutUrl = paymentLinkResponse.checkoutUrl;
 
+    
+
     const embed = new EmbedBuilder()
       .setDescription('**Trạng thái thanh toán:**\n```Chưa hoàn tất thanh toán```')
       .addFields(
-        { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: true },
-        { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true },
-        { name: "Số tiền", value: `${body.amount}`, inline: true }
+        { name: "Sản phẩm", value: `\`${getProductDisplayName(selectedSubProduct)}\``, inline: true },
+        { name: "Mã đơn hàng", value: `\`${body.orderCode}\``, inline: true },
+        { name: "Số tiền", value: `\`${body.amount}\``, inline: true },
+        { name: " ", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false }
       )
       .setImage(qrCodeImageUrl)
       .setTimestamp();
 
     // Gửi tin nhắn DM và lưu trạng thái thanh toán
     const sentMessage = await sendDM(interaction.user.id, { embed, components: [] });
-    pendingPayments[body.orderCode] = {
-      amount: body.amount,
-      product: selectedSubProduct,
-      userId: interaction.user.id,
-      messageId: sentMessage.id,
-    };
 
     // Gửi thông tin đến kênh thanh toán
     const pendingChannel = await client.channels.fetch(process.env.PAYMENTS_CHANNEL_ID);
@@ -129,7 +128,7 @@ async function handlePayment(selectedSubProduct, interaction, body) {
               { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true },
               { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
               { name: "Số tiền", value: `${body.amount} VND`, inline: true },
-              { name: "Sản phẩm", value: `**\`${selectedSubProduct}\`**`, inline: false },
+              { name: "Sản phẩm", value: `**\`${getProductDisplayName(selectedSubProduct)}\`**`, inline: false },
               { name: "URL mã QR", value: `[Thanh toán QRCode](${qrCodeImageUrl})` },
               { name: "Liên kết thanh toán", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false }
             )
@@ -147,6 +146,13 @@ async function handlePayment(selectedSubProduct, interaction, body) {
           .setColor(0x007AFF)
       ]
     });
+
+    pendingPayments[body.orderCode] = {
+      amount: body.amount,
+      product: selectedSubProduct,
+      userId: interaction.user.id,
+      messageId: sentMessage.id,
+    };
 
     await savePaymentToDB(body, selectedSubProduct, interaction, sentMessage);
 
@@ -279,7 +285,7 @@ client.on('interactionCreate', async interaction => {
               .addFields(
                 { name: "ID người dùng", value: mentionableUser, inline: false },
                 { name: "Mã đơn hàng", value: `\`${freeProductInfo.orderCode}\``, inline: false },
-                { name: "Sản phẩm", value: `\`${selectedSubProduct}\``, inline: false }
+                { name: "Sản phẩm", value: `\`${getProductDisplayName(selectedSubProduct)}\``, inline: false }
               )
               .setTimestamp()
           ]
@@ -404,9 +410,9 @@ app.post("/payos-webhook", async (req, res) => {
               .setTitle("Thanh toán của bạn đã hoàn tất")
               .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
               .addFields(
-                { name: "Số tiền", value: `${amount} VND`, inline: true },
-                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-                { name: "Sản phẩm", value: `${product}`, inline: true }
+                { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
+                { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
+                { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
               )
               .setColor(0x00FF00)
               .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
@@ -434,9 +440,9 @@ app.post("/payos-webhook", async (req, res) => {
               .setTitle("Thanh toán của bạn đã hoàn tất")
               .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
               .addFields(
-                { name: "Số tiền", value: `${amount} VND`, inline: true },
-                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-                { name: "Sản phẩm", value: `${product}`, inline: true }
+                { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
+                { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
+                { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
               )
               .setColor(0x00FF00)
               .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
@@ -457,9 +463,9 @@ app.post("/payos-webhook", async (req, res) => {
               .setTitle("Thanh toán của bạn đã hoàn tất")
               .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
               .addFields(
-                { name: "Số tiền", value: `${amount} VND`, inline: true },
-                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-                { name: "Sản phẩm", value: `${product}`, inline: true }
+                { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
+                { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
+                { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
               )
               .setColor(0x00FF00)
               .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
@@ -485,9 +491,9 @@ app.post("/payos-webhook", async (req, res) => {
               .setTitle("Lỗi khi xử lý Key")
               .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
               .addFields(
-                { name: "Số tiền", value: `${amount} VND`, inline: true },
-                { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-                { name: "Sản phẩm", value: `${product}`, inline: true }
+                { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
+                { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
+                { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
               )
               .setColor(0xFF0000)
               .setFooter({ text: "Vui lòng liên hệ hỗ trợ." })
@@ -504,9 +510,9 @@ app.post("/payos-webhook", async (req, res) => {
         .setTitle("Đơn hàng đã hoàn thành")
         .setDescription(`**Key sản phẩm:** \n\`\`\`${keyToSend}\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
         .addFields(
-          { name: "Số tiền", value: `${amount} VND`, inline: true },
-          { name: "Mã đơn hàng", value: `${orderCode}`, inline: true },
-          { name: "Sản phẩm", value: `${product}`, inline: true }
+          { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
+          { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
+          { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
         )
         .setColor(0x00FF00)
         .setTimestamp();
