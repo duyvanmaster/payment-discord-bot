@@ -24,6 +24,7 @@ client.on('interactionCreate', async interaction => {
             const embed = new EmbedBuilder()
                 .setColor(embedConfig.color)
                 .setTitle(embedConfig.title)
+                .setImage(embedConfig.imageUrl)
                 .setDescription(embedConfig.description)
                 .setTimestamp()
 
