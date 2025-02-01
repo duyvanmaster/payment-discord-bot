@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 require('dotenv').config();
-const getEmbedConfig = require('../firebase/firebaseService'); // Hàm lấy cấu hình từ Firebase
+const { getEmbedConfig } = require('../firebase/firebaseService');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages] });
 
@@ -26,7 +26,6 @@ client.on('interactionCreate', async interaction => {
                 .setTitle(embedConfig.title)
                 .setDescription(embedConfig.description)
                 .setTimestamp()
-                .setFooter(embedConfig.footer);
 
             for (const userId of userIds) {
                 try {

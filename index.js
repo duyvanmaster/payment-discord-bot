@@ -11,14 +11,14 @@ const fs = require("fs");
 const path = require("path");
 const { createTicket } = require('./src/handler/ticketManager');
 const mongoose = require('mongoose');
-const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB } = require('./src/utils/mongodb');
+const { savePaymentToDB, saveFreeProductToDB, saveWebhookPaymentToDB, getPendingPaymentFromDB } = require('./src/utils/mongodb');
 const { userMention } = require('@discordjs/builders');
 const { getProductInfo } = require('./src/firebase/firebaseService');
 const { getProductDisplayName } = require('./src/utils/productname')
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3030;
+const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -127,7 +127,7 @@ async function handlePayment(selectedSubProduct, interaction, body) {
             .addFields(
               { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true },
               { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
-              { name: "Số tiền", value: `${body.amount} VND`, inline: true },
+              { name: "Số tiền", value: `\`${body.amount} VND\``, inline: true },
               { name: "Sản phẩm", value: `**\`${getProductDisplayName(selectedSubProduct)}\`**`, inline: false },
               // { name: "URL mã QR", value: `[Thanh toán QRCode](${qrCodeImageUrl})` },
               { name: "Liên kết thanh toán", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false }
@@ -379,156 +379,87 @@ app.post("/payos-webhook", async (req, res) => {
     console.log("Received Webhook Data:", req.body.data);
     const { orderCode, description, amount } = req.body.data;
 
-    if (!orderCode) {
-      console.error("Invalid webhook data:", req.body);
-      return res.status(400).send("Invalid webhook data");
-    }
     if (orderCode === 123 && description === "VQRIO123") {
       return res.status(200).send("Webhook confirmed received");
     }
 
-    if (pendingPayments[orderCode] && pendingPayments[orderCode].amount === amount) {
-      const { userId, product, messageId } = pendingPayments[orderCode];
+    // Kiểm tra trạng thái thanh toán và cập nhật thông tin
+    const payment = await getPendingPaymentFromDB(orderCode);
 
-      // Tạo kênh ticket cho người dùng
-      const user = await client.users.fetch(userId);
-      const guild = await client.guilds.fetch(process.env.GUILD_ID);
-      const ticketChannel = await createTicket(client, guild, user);
-
-      const keyFilePath = path.join(__dirname, './src/key', `${product}.json`);
-      let keys;
-
-      const dmChannel = await user.createDM();
-      const sentMessage = await dmChannel.messages.fetch(messageId);
-
-      if (!fs.existsSync(keyFilePath)) {
-        console.error("File key không tồn tại:", keyFilePath);
-
-        await sentMessage.edit({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("Thanh toán của bạn đã hoàn tất")
-              .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
-              .addFields(
-                { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
-                { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
-                { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
-              )
-              .setColor(0x00FF00)
-              .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
-              .setTimestamp()
-          ]
-        });
-
-        await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_no_key');
-        await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed_no_key');
-        return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do không tồn tại file key");
-      }
-
-      try {
-        const data = fs.readFileSync(keyFilePath, 'utf8');
-        if (!data) {
-          throw new Error('File key rỗng');
-        }
-        keys = JSON.parse(data);
-      } catch (err) {
-        console.error("Lỗi khi đọc file key:", err);
-
-        await sentMessage.edit({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("Thanh toán của bạn đã hoàn tất")
-              .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
-              .addFields(
-                { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
-                { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
-                { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
-              )
-              .setColor(0x00FF00)
-              .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
-              .setTimestamp()
-          ]
-        });
-
-        await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_key_error');
-        return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do lỗi khi đọc file key");
-      }
-
-      if (!keys || keys.length === 0) {
-        console.error("Không còn key cho sản phẩm:", product);
-
-        await sentMessage.edit({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("Thanh toán của bạn đã hoàn tất")
-              .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
-              .addFields(
-                { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
-                { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
-                { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
-              )
-              .setColor(0x00FF00)
-              .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
-              .setTimestamp()
-          ]
-        });
-
-        await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_no_key_available');
-        await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed_no_key_available');
-        return res.status(200).send("Đã gửi thông báo thay thế 'Thanh toán của bạn đã hoàn tất' do không còn key khả dụng");
-      }
-
-      const keyToSend = keys.shift();
-
-      try {
-        fs.writeFileSync(keyFilePath, JSON.stringify(keys, null, 2));
-      } catch (err) {
-        console.error("Lỗi khi lưu file key:", err);
-
-        await sentMessage.edit({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("Lỗi khi xử lý Key")
-              .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
-              .addFields(
-                { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
-                { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
-                { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
-              )
-              .setColor(0xFF0000)
-              .setFooter({ text: "Vui lòng liên hệ hỗ trợ." })
-              .setTimestamp()
-          ]
-        });
-
-        await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed_key_save_error');
-        await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed_key_save_error');
-        return res.status(500).send("Lỗi khi lưu file key");
-      }
-
-      const updatedEmbed = new EmbedBuilder()
-        .setTitle("Đơn hàng đã hoàn thành")
-        .setDescription(`**Key sản phẩm:** \n\`\`\`${keyToSend}\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
-        .addFields(
-          { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
-          { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
-          { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
-        )
-        .setColor(0x00FF00)
-        .setTimestamp();
-
-      await sentMessage.edit({ embeds: [updatedEmbed] });
-
-      await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId, 'completed');
-
-      await saveWebhookPaymentToDB(orderCode, amount, product, userId, 'completed');
-
-      return res.status(200).send(`Thanh toán cho đơn hàng ${orderCode} đã hoàn tất và ticket đã được tạo`);
-
-    } else {
-      console.error("Mã đơn hàng hoặc số tiền không hợp lệ");
-      return res.status(500).send("Mã đơn hàng hoặc số tiền không hợp lệ");
+    if (!payment) {
+      console.warn(`Không tìm thấy giao dịch với mã đơn hàng ${orderCode}`);
+      return res.status(200).send("Không tìm thấy giao dịch.");
     }
+
+    const getPendingPayment = async (orderCode) => {
+      try {
+        if (!payment) {
+          console.error(`Không tìm thấy giao dịch với mã đơn hàng: ${orderCode}`);
+          return null; // Trả về null nếu không tìm thấy giao dịch
+        }
+        return payment;
+      } catch (error) {
+        console.error("Lỗi khi lấy thông tin giao dịch từ MongoDB:", error);
+        return null;
+      }
+    };
+
+    const pendingPayment = await getPendingPayment(orderCode);
+
+    if (!pendingPayment) {
+      return res.status(500).send("Không tìm thấy giao dịch đang chờ");
+    }
+
+    // Lấy thông tin từ giao dịch đang chờ
+    const userId = pendingPayment.userId || "unknownUser";
+    const product = pendingPayment.product || "unknownProduct";
+    const messageId = pendingPayment.messageId || null;
+
+    const user = await client.users.fetch(userId);
+    const guild = await client.guilds.fetch(process.env.GUILD_ID);
+    const ticketChannel = await createTicket(client, guild, user);
+
+    const displaynameproduct = await getProductDisplayName(product)
+
+    await saveWebhookPaymentToDB(orderCode, amount, product, userId, "completed");
+
+    const updatedEmbed = new EmbedBuilder()
+    .setTitle("Thanh toán của bạn đã hoàn tất")
+              .setDescription(`\`\`\`diff\n+ Thanh toán của bạn đã được xử lý thành công\`\`\`\nBạn có thể liên hệ với đội hỗ trợ tại kênh:\n ${ticketChannel}`)
+              .addFields(
+                { name: "Số tiền", value: `\`${amount} VND\``, inline: true },
+                { name: "Mã đơn hàng", value: `\`${orderCode}\``, inline: true },
+                { name: "Sản phẩm", value: `\`${getProductDisplayName(product)}\``, inline: true }
+              )
+              .setColor(0x00FF00)
+              .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi." })
+              .setTimestamp()
+      try {
+        const user = await client.users.fetch(userId);
+        console.log(`Đã lấy thông tin người dùng với ID: ${userId}`);
+        
+        const dmChannel = await user.createDM();
+        console.log(`Đã tạo kênh DM cho người dùng ${userId}`);
+      
+        if (messageId) {
+          try {
+            const sentMessage = await dmChannel.messages.fetch(messageId);
+            await sentMessage.edit({ embeds: [updatedEmbed] });
+          } catch (fetchError) {
+            const newSentMessage = await dmChannel.send({ embeds: [updatedEmbed] });
+          }
+        } else {
+          const sentMessage = await dmChannel.send({ embeds: [updatedEmbed] });
+        }
+      } catch (dmError) {
+        console.error(`Lỗi khi gửi hoặc chỉnh sửa DM cho người dùng ${userId}:`, dmError);
+      }
+
+    // Cập nhật trạng thái thanh toán lên Discord channel (nếu cần thiết)
+    await updatePaymentStatusOnChannel(client, orderCode, product, amount, userId);
+
+
+    return res.status(200).send("Webhook successfully processed");
   } catch (error) {
     console.error("Lỗi xử lý webhook:", error);
     res.status(500).send("Lỗi xử lý webhook");
