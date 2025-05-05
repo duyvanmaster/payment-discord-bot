@@ -90,9 +90,9 @@ async function createFreeProductEmbed(selectedSubProduct) {
 async function handlePayment(selectedSubProduct, interaction, body) {
   try {
     // Kiểm tra nếu deferReply đã được gọi trước đó
-    if (!interaction.deferred) {
-      await interaction.deferReply({ ephemeral: true });
-    }
+    // if (!interaction.deferred) {
+    //   await interaction.deferReply({ ephemeral: true });
+    // }
 
     const paymentLinkResponse = await payOS.createPaymentLink(body);
     const qrCodeImageUrl = `https://img.vietqr.io/image/${paymentLinkResponse.bin
@@ -139,12 +139,13 @@ async function handlePayment(selectedSubProduct, interaction, body) {
     }
 
     // Dùng Edit Reply để xử lí bất đồng bộ
-    await interaction.editReply({
+    await interaction.reply({
       embeds: [
         new EmbedBuilder()
           .setDescription('Đã gửi mã QR thanh toán qua DM của bạn!')
           .setColor(0x007AFF)
-      ]
+      ],
+      ephemeral : true,
     });
 
     pendingPayments[body.orderCode] = {
@@ -160,7 +161,7 @@ async function handlePayment(selectedSubProduct, interaction, body) {
   } catch (error) {
     console.error("Lỗi khi tạo liên kết thanh toán:", error);
 
-    await interaction.editReply({ content: "Đã xảy ra lỗi khi tạo liên kết thanh toán." });
+    await interaction.reply({ content: "Đã xảy ra lỗi khi tạo liên kết thanh toán." });
     throw error;
   }
 }
@@ -251,7 +252,7 @@ client.on('interactionCreate', async interaction => {
     const selectedSubProduct = interaction.values[0];
     const products = await getProductInfo();  // Lấy dữ liệu từ Firebase
 
-    await interaction.deferReply({ ephemeral: true });
+    // await interaction.deferReply({ ephemeral: true });
 
     if (selectedSubProduct.startsWith('free_')) {
       const { embed, components } = await createFreeProductEmbed(selectedSubProduct);
@@ -292,13 +293,13 @@ client.on('interactionCreate', async interaction => {
         });
       }
 
-      await interaction.editReply({
+      await interaction.reply({
         embeds: [
           new EmbedBuilder()
             .setDescription('Đã gửi thông tin sản phẩm miễn phí vào DM của bạn!')
             .setColor(0x007AFF)
         ],
-        ephemeral: true
+        ephemeral: true,
       });
 
       await saveFreeProductToDB(freeProductInfo, interaction);
