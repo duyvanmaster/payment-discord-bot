@@ -29,21 +29,25 @@ client.on('interactionCreate', async interaction => {
                 .setTimestamp()
 
             for (const userId of userIds) {
-                try {
-                    const user = await client.users.fetch(userId);
-                    await user.send({ embeds: [embed] });
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    console.log(`Đã gửi tin nhắn embed tới người dùng ID: ${userId}`);
-                } catch (error) {
-                    console.error(`Lỗi khi gửi tin nhắn tới người dùng ID: ${userId}`, error);
+            try {
+                const user = await client.users.fetch(userId);
+                await user.send({ embeds: [embed] });
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log(`✅ Đã gửi tin nhắn tới user ID: ${userId}`);
+            } catch (error) {
+                if (error.code === 50007) {
+                    console.log(`⚠️ Không thể gửi DM tới user ID: ${userId}`);
+                } else {
+                    console.error(`❌ Lỗi khi gửi tin nhắn tới user ID: ${userId}`, error);
                 }
             }
-
-            await interaction.editReply('Tin nhắn đã được gửi thành công!');
-        } else {
-            await interaction.editReply('Không thể lấy cấu hình embed.');
         }
+
+        await interaction.editReply('Tin nhắn đã được gửi xong!');
+    } else {
+        await interaction.editReply('Không thể lấy cấu hình embed.');
     }
+}
 });
 
 client.login(process.env.TOKEN);
