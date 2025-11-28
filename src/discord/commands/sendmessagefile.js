@@ -287,7 +287,13 @@ module.exports = {
 
         for (const userId of userIds) {
             try {
-                await sendDM(interaction.client, userId, { embed });
+                const sent = await sendDM(interaction.client, userId, { embed });
+
+                // Nếu sendDM trả về null/undefined nghĩa là thất bại (đã log lỗi ở helper)
+                if (!sent) {
+                    throw new Error('Failed to send DM');
+                }
+
                 successCount++;
                 if (results.length < 20) {
                     results.push(`✅ <@${userId}>`);
@@ -295,7 +301,7 @@ module.exports = {
             } catch (error) {
                 failCount++;
                 if (results.length < 20) {
-                    results.push(`❌ ${userId}`);
+                    results.push(`❌ ${userId} (DM đóng/Bot bị chặn)`);
                 }
             }
         }
