@@ -7,7 +7,11 @@ async function sendDM(client, userId, { embed, components }) {
             return await user.send({ embeds: [embed], components });
         }
     } catch (error) {
-        console.error(`Lỗi khi gửi DM tới ${userId}:`, error);
+        if (error.code === 50007) {
+            console.error(`❌ Không thể gửi DM tới ${userId}: Người dùng đã chặn DM hoặc không chung server.`);
+        } else {
+            console.error(`Lỗi khi gửi DM tới ${userId}:`, error);
+        }
     }
 }
 

@@ -19,27 +19,53 @@ module.exports = {
                 }
             }
         } else if (interaction.isStringSelectMenu() || interaction.isButton()) {
-            // Handle legitvn select menus
-            if (interaction.customId === 'select_product' || interaction.customId === 'select_sub_product' || interaction.customId === 'select_sub_sub_product') {
-                const command = interaction.client.commands.get('legitvn');
-                if (command && command.handleInteraction) {
-                    await command.handleInteraction(interaction);
+            try {
+                // Handle legitvn select menus
+                if (interaction.customId === 'select_product' || interaction.customId === 'select_sub_product' || interaction.customId === 'select_sub_sub_product') {
+                    const command = interaction.client.commands.get('legitvn');
+                    if (command && command.handleInteraction) {
+                        await command.handleInteraction(interaction);
+                    }
                 }
-            }
-            // Handle sendmessagefile button
-            else if (interaction.customId === 'sendmessagefile_button' ||
-                interaction.customId === 'sendmessagefile_confirm' ||
-                interaction.customId === 'sendmessagefile_cancel') {
-                const command = interaction.client.commands.get('sendmessage_file');
-                if (command && command.handleButton) {
-                    await command.handleButton(interaction);
+                // Handle sendmessagefile button
+                else if (interaction.customId === 'sendmessagefile_button' ||
+                    interaction.customId === 'sendmessagefile_confirm' ||
+                    interaction.customId === 'sendmessagefile_cancel') {
+                    const command = interaction.client.commands.get('sendmessage_file');
+                    if (command && command.handleButton) {
+                        await command.handleButton(interaction);
+                    }
+                }
+            } catch (error) {
+                console.error('Error handling component interaction:', error);
+                try {
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({ content: 'Đã xảy ra lỗi khi xử lý yêu cầu!', ephemeral: true });
+                    } else {
+                        await interaction.followUp({ content: 'Đã xảy ra lỗi khi xử lý yêu cầu!', ephemeral: true });
+                    }
+                } catch (e) {
+                    console.error('Error sending error message:', e);
                 }
             }
         } else if (interaction.isModalSubmit()) {
-            if (interaction.customId === 'sendmessagefile_modal') {
-                const command = interaction.client.commands.get('sendmessage_file');
-                if (command && command.handleModal) {
-                    await command.handleModal(interaction);
+            try {
+                if (interaction.customId === 'sendmessagefile_modal') {
+                    const command = interaction.client.commands.get('sendmessage_file');
+                    if (command && command.handleModal) {
+                        await command.handleModal(interaction);
+                    }
+                }
+            } catch (error) {
+                console.error('Error handling modal interaction:', error);
+                try {
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({ content: 'Đã xảy ra lỗi khi xử lý modal!', ephemeral: true });
+                    } else {
+                        await interaction.followUp({ content: 'Đã xảy ra lỗi khi xử lý modal!', ephemeral: true });
+                    }
+                } catch (e) {
+                    console.error('Error sending error message:', e);
                 }
             }
         }

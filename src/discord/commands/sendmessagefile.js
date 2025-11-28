@@ -347,7 +347,27 @@ module.exports = {
             .setFooter({ text: `Hoàn thành ${successCount}/${userIds.length} tin nhắn` })
             .setTimestamp();
 
-        await interaction.editReply({ embeds: [resultEmbed], components: [] });
+        try {
+            // Gửi báo cáo kết quả vào kênh chat (Public)
+            if (interaction.channel) {
+                await interaction.channel.send({ content: `<@${interaction.user.id}>`, embeds: [resultEmbed] });
+            }
+
+            // Cập nhật tin nhắn ephemeral (để tắt trạng thái loading của nút và báo xong)
+            await interaction.editReply({
+                content: '✅ Đã hoàn thành gửi tin nhắn! Vui lòng xem báo cáo chi tiết trong kênh chat.',
+                embeds: [],
+                components: []
+            });
+        } catch (error) {
+            console.error('Error sending report:', error);
+            // Fallback: nếu không gửi được vào kênh, thử edit reply cũ
+            try {
+                await interaction.editReply({ embeds: [resultEmbed], components: [] });
+            } catch (e) {
+                console.error('Failed to fallback editReply:', e);
+            }
+        }
     },
     createProgressBar(current, total, length = 20) {
         const filled = Math.round((current / total) * length);
