@@ -1,67 +1,292 @@
-# Payment Discord Bot
+# 🤖 Payment Discord Bot
 
-Welcome to the Payment Discord Bot project! This bot is designed to help manage and facilitate payments within your Discord server.
+> Discord bot quản lý thanh toán tự động với VietQR và gửi tin nhắn hàng loạt
 
-## Features
+[![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Discord.js](https://img.shields.io/badge/Discord.js-v14-5865F2?logo=discord&logoColor=white)](https://discord.js.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Deploy](https://img.shields.io/badge/deploy-Render-46E3B7?logo=render&logoColor=white)](https://render.com)
 
-- Display product information
-- Process payments
-- Track transaction history
-- Notify users of payment status
+## ✨ Tính năng
 
-## Configuration
+### 💳 Thanh toán
+- ✅ **Tích hợp PayOS** - Xử lý thanh toán trực tuyến
+- ✅ **VietQR** - Tạo mã QR cho tất cả ngân hàng Việt Nam
+- ✅ **Webhook** - Tự động xác nhận thanh toán
+- ✅ **Quản lý sản phẩm** - Firebase Realtime Database
 
-1. **Clone the repository.**
+### 📬 Gửi tin nhắn hàng loạt
+- ✅ **Upload file** - Hỗ trợ JSON và TXT
+- ✅ **Không giới hạn** - Gửi cho hàng nghìn người
+- ✅ **Preview chuyên nghiệp** - Xem trước trước khi gửi
+- ✅ **Xác nhận/Hủy bỏ** - An toàn tránh nhầm lẫn
+- ✅ **Thống kê chi tiết** - Progress bar và báo cáo
 
-   ```sh
-   git clone https://github.com/duyvanmaster/payment-discord-bot.git
-   ```
+### 🎯 Commands
 
-2. **Install dependencies:**
+| Command | Mô tả |
+|---------|-------|
+| `/legitvn` | Hiển thị sản phẩm và xử lý thanh toán |
+| `/qrcode` | Tạo mã QR VietQR với giá trị mặc định |
+| `/sendmessage_file` | Gửi tin nhắn hàng loạt qua file |
 
-   ```sh
-   npm install
-   ```
+## 🚀 Quick Start
 
-3. **Create a `.env` file based on the `.env.example` in the root directory and add your configuration.**
+### Prerequisites
+- Node.js v18+
+- MongoDB Atlas account
+- Firebase account
+- Discord Bot Token
 
-4. **Set up Discord Bot Configuration:**
+### Installation
 
-   - Go to the [Discord Developer Portal](https://discord.com/developers/applications).
-   - Create a new application and add a bot to this application.
-   - Obtain the required credentials such as `TOKEN`, `GUILD_ID`, `CLIENT_ID`, and more from Discord Developer Portal.
-   - Add these credentials to your `.env` file (see `.env.example` for reference).
+```bash
+# Clone repository
+git clone https://github.com/duyvanmaster/payment-discord-bot.git
+cd payment-discord-bot
 
-   Ensure "Developer Mode" is enabled in Discord's settings to access the "Copy ID" option for `GUILD_ID`, `PAYMENTS_CHANNEL_ID`, `SUPPORTROLE_ID`, and `BOTROLE_ID`.
+# Install dependencies
+npm install
 
-5. **Set up MongoDB:**
+# Copy environment file
+cp .env.example .env
 
-   - Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) and create a new cluster.
-   - Obtain your MongoDB URI and add it to your `.env` file.
+# Edit .env with your credentials
+nano .env
 
-6. **Set up Firebase:**
+# Register slash commands
+node src/SlashCommands/slashcommands.js
 
-   - Go to the [Firebase Console](https://console.firebase.google.com/).
-   - Create a new project and add a web app.
-   - Obtain your Firebase configuration and add it to your `.env` file.
-   - Import [realtime-database.json](https://github.com/duyvanmaster/payment-discord-bot/blob/master/realtime-database.json) into realtime database
+# Start development server
+npm run dev
+```
 
-7. **Set up the payment gateway:**
+## ⚙️ Configuration
 
-   - Go to [payOS](https://my.payos.vn) and create a payment gateway.
-   - Obtain the required credentials such as `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, and `PAYOS_CHECKSUM_KEY` and add them to your `.env` file.
-   - Set the webhook URL to `https://${YOUR_DOMAIN}/payos-webhook`.
+### Environment Variables
 
-## Running the Bot
+Tạo file `.env` từ `.env.example` và điền thông tin:
 
-1. **Start the bot:**
+```env
+# Discord
+TOKEN=your_discord_bot_token
+CLIENT_ID=your_client_id
+GUILD_ID=your_guild_id
+PAYMENTS_CHANNEL_ID=your_channel_id
 
-   ```sh
-   npm run dev
-   ```
+# Database
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/
 
-2. **Invite the bot to your server using the OAuth2 URL from the Discord Developer Portal.**
+# Firebase
+FIREBASE_API_KEY=your_api_key
+FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+FIREBASE_DATABASE_URL=https://your_project.firebaseio.com
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+FIREBASE_APP_ID=your_app_id
 
-## Contact Information
+# PayOS (Optional)
+PAYOS_CLIENT_ID=your_client_id
+PAYOS_API_KEY=your_api_key
+PAYOS_CHECKSUM_KEY=your_checksum_key
 
-For questions or support, feel free to reach out: [e-z.bio/duyvan](https://e-z.bio/duyvan)
+# Server
+PORT=3000
+YOUR_DOMAIN=http://localhost:3000
+```
+
+### Discord Setup
+
+1. Truy cập [Discord Developer Portal](https://discord.com/developers/applications)
+2. Tạo ứng dụng mới → Add Bot
+3. Bật **Message Content Intent** và **Server Members Intent**
+4. Lấy token và thêm vào `.env`
+5. Invite bot với quyền Administrator
+
+### Database Setup
+
+**MongoDB:**
+```bash
+# Tạo cluster trên MongoDB Atlas
+# Copy connection string vào MONGO_URI
+```
+
+**Firebase:**
+```bash
+# 1. Tạo project trên Firebase Console
+# 2. Thêm Realtime Database
+# 3. Import file realtime-database.json
+# 4. Copy config vào .env
+```
+
+## 📝 Usage
+
+### `/qrcode` - Tạo mã QR thanh toán
+
+```
+/qrcode amount:50000
+```
+
+**Tùy chọn:**
+- `amount` (bắt buộc): Số tiền
+- `bank`: Ngân hàng (mặc định: OCB)
+- `account`: Số tài khoản (mặc định: 0988006094)
+- `accountname`: Tên tài khoản (mặc định: TRAN VAN QUY)
+- `memo`: Nội dung (mặc định: legitvn)
+
+### `/sendmessage_file` - Gửi tin hàng loạt
+
+**Chuẩn bị file JSON:**
+```json
+[
+  {"userId": "123456789"},
+  {"userId": "987654321"}
+]
+```
+
+**Hoặc file TXT:**
+```
+123456789
+987654321
+```
+
+**Sử dụng:**
+1. Gõ `/sendmessage_file` → Upload file
+2. Nhấn nút "Soạn tin nhắn"
+3. Nhập nội dung + URL hình (tùy chọn)
+4. Xem preview
+5. Nhấn "Xác nhận gửi" hoặc "Hủy bỏ"
+
+## 🌐 Deployment
+
+### Render (Khuyến nghị)
+
+Xem hướng dẫn chi tiết: [RENDER_DEPLOY.md](RENDER_DEPLOY.md)
+
+**Quick Deploy:**
+
+1. Fork repository này
+2. Tạo Web Service trên [Render](https://render.com)
+3. Connect GitHub repo
+4. Thêm environment variables
+5. Deploy!
+
+**Quan trọng:**
+- ⚠️ Setup [UptimeRobot](https://uptimerobot.com/) để ping `/health` mỗi 5-10 phút
+- ⚠️ Render Free Tier sẽ sleep sau 15 phút không có traffic
+
+### Other Platforms
+
+Bot cũng chạy tốt trên:
+- Railway
+- Heroku
+- DigitalOcean
+- AWS/GCP (VPS)
+
+## 📂 Project Structure
+
+```
+payment-discord-bot/
+├── src/
+│   ├── config/              # Configuration files
+│   ├── discord/
+│   │   ├── commands/        # Slash commands
+│   │   │   ├── legitvn.js
+│   │   │   ├── qrcode.js
+│   │   │   └── sendmessagefile.js
+│   │   ├── events/          # Discord events
+│   │   └── client.js
+│   ├── server/
+│   │   ├── routes/          # Express routes
+│   │   └── app.js
+│   ├── services/            # Business logic
+│   ├── utils/               # Helper functions
+│   └── SlashCommands/       # Command registration
+├── .env.example             # Environment template
+├── .gitignore
+├── index.js                 # Entry point
+├── package.json
+├── README.md
+└── RENDER_DEPLOY.md         # Deployment guide
+```
+
+## 🛠️ Tech Stack
+
+- **Discord.js v14** - Discord Bot framework
+- **Express.js** - Web server & webhook
+- **MongoDB** - Primary database
+- **Firebase** - Realtime database
+- **PayOS** - Payment gateway
+- **VietQR API** - QR code generation
+
+## 🔧 Development
+
+```bash
+# Development with auto-reload
+npm run dev
+
+# Production
+npm start
+
+# Register slash commands (after code changes)
+node src/SlashCommands/slashcommands.js
+```
+
+## 🐛 Troubleshooting
+
+### Bot không nhận được commands
+```bash
+# Re-register slash commands
+node src/SlashCommands/slashcommands.js
+```
+
+### Timeout errors
+- ✅ Đã fix bằng `deferReply()` trong tất cả commands
+- Render cold start có thể mất 20-30s lần đầu
+
+### Failed to send DM
+- User đã tắt DM từ server members
+- Bot không share server với user đó
+
+## 📊 Features Roadmap
+
+- [ ] Multi-language support
+- [ ] Schedule message sending
+- [ ] Payment analytics dashboard
+- [ ] Role-based permissions
+- [ ] Auto-renewal subscriptions
+
+## 🤝 Contributing
+
+Pull requests are welcome! Để contribute:
+
+1. Fork repository
+2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Mở Pull Request
+
+## 📄 License
+
+MIT License - xem [LICENSE](LICENSE) để biết thêm chi tiết.
+
+## 📞 Contact & Support
+
+- **GitHub:** [@duyvanmaster](https://github.com/duyvanmaster)
+- **Website:** [e-z.bio/duyvan](https://e-z.bio/duyvan)
+
+## 🌟 Acknowledgments
+
+- [Discord.js](https://discord.js.org/) - Amazing Discord library
+- [VietQR](https://vietqr.io/) - QR code API
+- [PayOS](https://payos.vn/) - Payment gateway
+
+---
+
+<div align="center">
+  <strong>⭐ Star this repo nếu thấy hữu ích!</strong>
+  <br/>
+  Made with ❤️ by <a href="https://github.com/duyvanmaster">DuyVan</a>
+</div>

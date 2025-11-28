@@ -8,10 +8,16 @@ const commands = [
         description: 'Tạo mã QR cho ngân hàng sử dụng VietQR',
         options: [
             {
+                name: 'amount',
+                type: 4, // INTEGER
+                description: 'Số tiền (VND)',
+                required: true
+            },
+            {
                 name: 'bank',
                 type: 3, // STRING
-                description: 'Mã ngân hàng',
-                required: true,
+                description: 'Mã ngân hàng (Mặc định: OCB)',
+                required: false,
                 choices: [
                     { name: 'MBBank', value: '970422' },
                     { name: 'Vietcombank', value: '970436' },
@@ -43,67 +49,57 @@ const commands = [
             {
                 name: 'account',
                 type: 3, // STRING
-                description: 'Số tài khoản ngân hàng',
-                required: true
+                description: 'Số tài khoản ngân hàng (Mặc định: 0988006094)',
+                required: false
             },
             {
                 name: 'accountname',
                 type: 3, // STRING
-                description: 'Tên tài khoản ngân hàng',
-                required: true
-            },
-            {
-                name: 'amount',
-                type: 4, // INTEGER
-                description: 'Số tiền (VND)',
-                required: true
+                description: 'Tên tài khoản ngân hàng (Mặc định: TRAN VAN QUY)',
+                required: false
             },
             {
                 name: 'memo',
                 type: 3, // STRING
-                description: 'Ghi chú',
+                description: 'Ghi chú (Mặc định: legitvn)',
                 required: false
-            },
-            // {
-            //     name: 'template',
-            //     type: 3, // STRING
-            //     description: 'Template QR code (e.g., compact, standard)',
-            //     required: false,
-            //     choices: [
-            //         { name: 'Compact', value: 'compact' },
-            //         { name: 'Qr Only', value: 'qr_only' },
-            //         { name: 'Print', value: 'print' }
-            //     ]
-            // },
-            // {
-            //     name: 'media',
-            //     type: 3, // STRING
-            //     description: 'Loại media (e.g., .jpg, .png)',
-            //     required: false,
-            //     choices: [
-            //         { name: 'JPG', value: '.jpg' },
-            //         { name: 'PNG', value: '.png' }
-            //     ]
-            // }
+            }
         ]
     },
+    //     name: 'template',
+    //     type: 3, // STRING
+    //     description: 'Template QR code (e.g., compact, standard)',
+    //     required: false,
+    //     choices: [
+    //         { name: 'Compact', value: 'compact' },
+    //         { name: 'Qr Only', value: 'qr_only' },
+    //         { name: 'Print', value: 'print' }
+    //     ]
+    // },
+    // {
+    //     name: 'media',
+    //     type: 3, // STRING
+    //     description: 'Loại media (e.g., .jpg, .png)',
+    //     required: false,
+    //     choices: [
+    //         { name: 'JPG', value: '.jpg' },
+    //         { name: 'PNG', value: '.png' }
+    //     ]
+    // }
+
     {
         name: 'legitvn',
         description: 'Dịch vụ LegitVN',
     },
     {
-        name: 'verify',
-        description: 'Xác minh công dân',
-    },
-    {
-        name: 'sendmessage',
-        description: 'Gửi tin nhắn tới người dùng dựa trên ID của họ',
+        name: 'sendmessage_file',
+        description: 'Gửi tin nhắn hàng loạt bằng cách upload file JSON',
         options: [
             {
-                name: 'user_ids',
-                type: 3, // 3 là chuỗi
-                description: 'Danh sách ID người dùng, phân cách bởi dấu phẩy',
-                required: true,
+                name: 'file',
+                type: 11, // ATTACHMENT type
+                description: 'File JSON chứa danh sách userId',
+                required: true
             }
         ]
     }
