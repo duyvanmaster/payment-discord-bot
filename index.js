@@ -79,9 +79,9 @@ function startServer() {
 startBot();
 startServer();
 
-// Keep-alive: Ping chính mình mỗi 10 phút để tránh Render free tier spin down
+// Keep-alive: Ping chính mình mỗi 5 phút để tránh Render free tier spin down
 if (config.yourDomain) {
-  cron.schedule('*/10 * * * *', async () => {
+  cron.schedule('*/5 * * * *', async () => {
     try {
       // Dynamic import for node-fetch since we're using CommonJS
       const fetch = (await import('node-fetch')).default;
@@ -89,8 +89,12 @@ if (config.yourDomain) {
       const response = await fetch(healthUrl, { method: 'GET', timeout: 5000 });
       const status = response.status;
 
+      // Log memory usage
+      const used = process.memoryUsage().heapUsed / 1024 / 1024;
+      const rss = process.memoryUsage().rss / 1024 / 1024;
+
       if (status === 200) {
-        console.log(`🏓 Keep-alive ping successful: ${status} at ${new Date().toISOString()}`);
+        console.log(`🏓 Keep-alive ping: ${status} | RAM: ${Math.round(used)}MB (Heap) / ${Math.round(rss)}MB (RSS) | ${new Date().toISOString()}`);
       } else {
         console.warn(`⚠️ Keep-alive ping returned: ${status}`);
       }
@@ -98,7 +102,7 @@ if (config.yourDomain) {
       console.error('❌ Keep-alive ping failed:', error.message);
     }
   });
-  console.log('✅ Keep-alive cron job started (pings /health every 10 minutes)');
+  console.log('✅ Keep-alive cron job started (pings /health every 5 minutes)');
   console.log(`📍 Target URL: ${config.yourDomain}/health`);
 } else {
   console.warn('⚠️ YOUR_DOMAIN not configured - keep-alive disabled');
