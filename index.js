@@ -94,7 +94,7 @@ if (config.yourDomain) {
       const rss = process.memoryUsage().rss / 1024 / 1024;
 
       if (status === 200) {
-        console.log(`🏓 Keep-alive ping: ${status} | RAM: ${Math.round(used)}MB (Heap) / ${Math.round(rss)}MB (RSS) | ${new Date().toISOString()}`);
+        //console.log(`🏓 Keep-alive ping: ${status} | RAM: ${Math.round(used)}MB (Heap) / ${Math.round(rss)}MB (RSS) | ${new Date().toISOString()}`);
       } else {
         console.warn(`⚠️ Keep-alive ping returned: ${status}`);
       }
