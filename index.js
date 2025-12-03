@@ -1,7 +1,7 @@
 const client = require('./src/discord/client');
 const app = require('./src/server/app');
 const config = require('./src/config/config');
-const cron = require('node-cron');
+
 
 
 // Load events
@@ -79,34 +79,10 @@ function startServer() {
 startBot();
 startServer();
 
-// Keep-alive: Ping chính mình mỗi 5 phút để tránh Render free tier spin down
-if (config.yourDomain) {
-  cron.schedule('*/5 * * * *', async () => {
-    try {
-      // Dynamic import for node-fetch since we're using CommonJS
-      const fetch = (await import('node-fetch')).default;
-      const healthUrl = `${config.yourDomain}/health`;
-      const response = await fetch(healthUrl, { method: 'GET', timeout: 5000 });
-      const status = response.status;
+// Keep-alive: Using UptimeRobot external service instead of internal cron job
+// This prevents HTTP 429 rate limit errors and is more reliable
+// Setup: https://uptimerobot.com (free) - Monitor: https://payment-discord-bot-05r9.onrender.com/health
 
-      // Log memory usage
-      const used = process.memoryUsage().heapUsed / 1024 / 1024;
-      const rss = process.memoryUsage().rss / 1024 / 1024;
-
-      if (status === 200) {
-        //console.log(`🏓 Keep-alive ping: ${status} | RAM: ${Math.round(used)}MB (Heap) / ${Math.round(rss)}MB (RSS) | ${new Date().toISOString()}`);
-      } else {
-        console.warn(`⚠️ Keep-alive ping returned: ${status}`);
-      }
-    } catch (error) {
-      console.error('❌ Keep-alive ping failed:', error.message);
-    }
-  });
-  console.log('✅ Keep-alive cron job started (pings /health every 5 minutes)');
-  console.log(`📍 Target URL: ${config.yourDomain}/health`);
-} else {
-  console.warn('⚠️ YOUR_DOMAIN not configured - keep-alive disabled');
-}
 
 
 // Graceful shutdown
