@@ -316,11 +316,12 @@ async function distributeVouchers(voucherCode, userIds, client) {
                                     value: 'https://discord.com/channels/1053835122530590781/1205701391297941525',
                                     inline: false
                                 },
-                                    {
-                                        name: 'Video hướng dẫn',
-                                        value: '[Cách thanh toán qua Bot LegitVN](https://www.youtube.com/watch?v=EQ6gufbGcFM)',
-                                        inline: false
-                                    })
+                                    // {
+                                    //     name: 'Video hướng dẫn',
+                                    //     value: '[Cách thanh toán qua Bot LegitVN](https://www.youtube.com/watch?v=EQ6gufbGcFM)',
+                                    //     inline: false
+                                    // }
+                                )
                                 .setFooter({ text: 'Sử dụng lệnh `/myvouchers` để xem chi tiết' })
                                 .setTimestamp();
 
