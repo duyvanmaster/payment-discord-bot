@@ -1,7 +1,7 @@
 const { connectToDatabase } = require('./database'); // Import hàm connectToDatabase từ file database.js
 
 // Hàm lưu giao dịch có thanh toán vào MongoDB
-async function savePaymentToDB(body, selectedSubProduct, interaction, sentMessage) {
+async function savePaymentToDB(body, selectedSubProduct, interaction, sentMessage, voucherCode = null) {
   try {
     const db = await connectToDatabase();
     const paymentsCollection = db.collection('paymentsdata');
@@ -17,6 +17,7 @@ async function savePaymentToDB(body, selectedSubProduct, interaction, sentMessag
       messageId: sentMessage.id,
       checkoutUrl: body.checkoutUrl,
       status: 'pending',
+      voucherCode: voucherCode, // Store voucher code if applied
       createdAt: vietnamDate,
     });
 

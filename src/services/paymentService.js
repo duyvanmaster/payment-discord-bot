@@ -1,11 +1,11 @@
 const payOS = require('../payos/payos');
 const { EmbedBuilder } = require('discord.js');
 const { savePaymentToDB } = require('../utils/mongodb');
-const { getProductDisplayName } = require('../utils/productname');
+const { getProductDisplayName, getProductIcon } = require('../utils/productname');
 const { sendDM } = require('../utils/helpers');
 const config = require('../config/config');
 
-async function handlePaymentCreation(client, selectedSubProduct, interaction, body) {
+async function handlePaymentCreation(client, selectedSubProduct, interaction, body, voucherData = null) {
     try {
         // Defer reply immediately to prevent timeout
         if (!interaction.deferred && !interaction.replied) {
@@ -16,48 +16,101 @@ async function handlePaymentCreation(client, selectedSubProduct, interaction, bo
         const qrCodeImageUrl = `https://img.vietqr.io/image/${paymentLinkResponse.bin}-${paymentLinkResponse.accountNumber}-vietqr_pro.jpg?amount=${paymentLinkResponse.amount}&addInfo=${encodeURIComponent(paymentLinkResponse.description)}`;
         body.checkoutUrl = paymentLinkResponse.checkoutUrl;
 
+        const productIcon = getProductIcon(selectedSubProduct);
         const embed = new EmbedBuilder()
-            .setDescription('**Trạng thái thanh toán:**\n```Chưa hoàn tất thanh toán```')
+            //.setDescription('**Trạng thái thanh toán:**\n```Chưa hoàn tất thanh toán```')
+            .setAuthor({
+                name: getProductDisplayName(selectedSubProduct),
+                iconURL: productIcon
+            })
             .addFields(
-                { name: "Sản phẩm", value: `\`${getProductDisplayName(selectedSubProduct)}\``, inline: true },
-                { name: "Mã đơn hàng", value: `\`${body.orderCode}\``, inline: true },
-                { name: "Số tiền", value: `\`${body.amount}\``, inline: true },
-                { name: " ", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false }
-            )
-            .setImage(qrCodeImageUrl)
-            .setTimestamp();
+                //{ name: " ", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false },
+                { name: " ", value: "```Chưa hoàn tất thanh toán```", inline: false }
+            );
+
+        // Add voucher info if applied
+        if (voucherData) {
+            embed.addFields(
+                { name: " ", value: "ㅤ", inline: false },
+                { name: "Giá gốc", value: `\`\`\`${voucherData.originalAmount.toLocaleString('vi-VN')} VND\`\`\``, inline: false },
+                { name: "Giảm", value: `\`\`\`${voucherData.discountAmount.toLocaleString('vi-VN')} VND\`\`\``, inline: true },
+                { name: "Mã giảm giá", value: `\`\`\`${voucherData.code}\`\`\``, inline: true },
+                { name: "Mã đơn hàng", value: `\`\`\`${body.orderCode}\`\`\``, inline: true },
+                { name: " ", value: "ㅤ", inline: false },
+                { name: "Tổng cộng", value: `\`\`\`${body.amount.toLocaleString('vi-VN')} VND\`\`\``, inline: false }
+            );
+        } else {
+            embed.addFields(
+                { name: "Mã đơn hàng", value: `\`\`\`${body.orderCode}\`\`\``, inline: true },
+                { name: "Số tiền", value: `\`\`\`${body.amount.toLocaleString('vi-VN')} VND\`\`\``, inline: true }
+            );
+        }
+
+        embed.setImage(qrCodeImageUrl);
+        embed.setTimestamp();
 
         // Gửi tin nhắn DM và lưu trạng thái thanh toán
-        const sentMessage = await sendDM(client, interaction.user.id, { embed, components: [] });
+        //console.log(`${body.checkoutUrl}`);
+        const sentMessage = await sendDM(client, interaction.user.id, { embeds: [embed], components: [] });
 
         // Gửi thông tin đến kênh thanh toán
         const pendingChannel = await client.channels.fetch(config.paymentsChannelId);
         if (pendingChannel && pendingChannel.isTextBased()) {
             await pendingChannel.send({
                 embeds: [
-                    new EmbedBuilder()
-                        .setTitle("Thông tin giao dịch người dùng")
-                        .setDescription('**Trạng thái thanh toán:** ```Chưa hoàn tất thanh toán```')
-                        .addFields(
-                            { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true },
-                            { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
-                            { name: "Số tiền", value: `\`${body.amount} VND\``, inline: true },
-                            { name: "Sản phẩm", value: `**\`${getProductDisplayName(selectedSubProduct)}\`**`, inline: false },
+                    (function () {
+                        const channelEmbed = new EmbedBuilder()
+                            .setTitle("Thông tin giao dịch người dùng")
+                            .setDescription('**Trạng thái thanh toán:** ```Chưa hoàn tất thanh toán```')
+                            .addFields(
+                                { name: "Mã đơn hàng", value: `${body.orderCode}`, inline: true },
+                                { name: "ID người dùng", value: `<@${interaction.user.id}>`, inline: true },
+                                { name: "Sản phẩm", value: `**\`${getProductDisplayName(selectedSubProduct)}\`**`, inline: false }
+                            );
+
+                        if (voucherData) {
+                            channelEmbed.addFields(
+                                { name: "Giá gốc", value: `\`\`\`${voucherData.originalAmount.toLocaleString('vi-VN')} VND\`\`\``, inline: true },
+                                { name: "Mã giảm giá", value: `\`\`\`${voucherData.code}\`\`\``, inline: true },
+                                { name: "Giảm", value: `\`\`\`${voucherData.discountAmount.toLocaleString('vi-VN')} VND\`\`\``, inline: true },
+                                { name: " ", value: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", inline: false },
+                                { name: "Tổng cộng", value: `\`\`\`${body.amount.toLocaleString('vi-VN')} VND\`\`\``, inline: true }
+                            );
+                        } else {
+                            channelEmbed.addFields(
+                                { name: "Số tiền", value: `\`${body.amount} VND\``, inline: true }
+                            );
+                        }
+
+                        channelEmbed.addFields(
                             { name: "Liên kết thanh toán", value: `[Thanh toán qua liên kết](${body.checkoutUrl})`, inline: false }
-                        )
-                        .setTimestamp()
+                        );
+                        channelEmbed.setTimestamp();
+
+                        return channelEmbed;
+                    })()
                 ]
             });
         }
 
-        await savePaymentToDB(body, selectedSubProduct, interaction, sentMessage);
+        const voucherCodeToSave = voucherData ? voucherData.code : null;
+        await savePaymentToDB(body, selectedSubProduct, interaction, sentMessage, voucherCodeToSave);
+
+        const voucherCode = voucherData ? voucherData.code : null;
+
+        let successDescription = 'Đã gửi mã QR thanh toán qua DM.';
+        if (voucherCode) {
+            successDescription = `Đã áp dụng mã **${voucherCode.toUpperCase()}** và gửi QR thanh toán qua DM.`;
+        }
 
         await interaction.editReply({
+            content: '',
             embeds: [
                 new EmbedBuilder()
-                    .setDescription('Đã gửi mã QR thanh toán qua DM của bạn!')
-                    .setColor(0x007AFF)
-            ]
+                    .setDescription(successDescription)
+                    .setColor(0x00FF00) // Green success
+            ],
+            components: [] // Remove any buttons/select menus
         });
 
         return qrCodeImageUrl;

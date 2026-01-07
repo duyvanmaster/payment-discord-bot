@@ -1,10 +1,10 @@
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 
-async function sendDM(client, userId, { embed, components }) {
+async function sendDM(client, userId, { embeds, components }) {
     try {
         const user = await client.users.fetch(userId);
         if (user) {
-            return await user.send({ embeds: [embed], components });
+            return await user.send({ embeds, components });
         }
     } catch (error) {
         if (error.code === 50007) {

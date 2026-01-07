@@ -21,7 +21,10 @@ module.exports = {
         } else if (interaction.isStringSelectMenu() || interaction.isButton()) {
             try {
                 // Handle legitvn select menus
-                if (interaction.customId === 'select_product' || interaction.customId === 'select_sub_product' || interaction.customId === 'select_sub_sub_product') {
+                if (interaction.customId === 'select_product' ||
+                    interaction.customId === 'select_sub_product' ||
+                    interaction.customId === 'select_sub_sub_product' ||
+                    interaction.customId === 'select_voucher_code') {
                     const command = interaction.client.commands.get('legitvn');
                     if (command && command.handleInteraction) {
                         await command.handleInteraction(interaction);
@@ -34,6 +37,29 @@ module.exports = {
                     const command = interaction.client.commands.get('sendmessage_file');
                     if (command && command.handleButton) {
                         await command.handleButton(interaction);
+                    }
+                }
+                // Handle voucher application buttons
+                else if (interaction.customId === 'apply_voucher_button' ||
+                    interaction.customId === 'skip_voucher_button') {
+                    const command = interaction.client.commands.get('legitvn');
+                    if (command && command.handleVoucherButton) {
+                        await command.handleVoucherButton(interaction);
+                    }
+                }
+                // Handle createvoucher buttons
+                else if (interaction.customId === 'upload_voucher_users' ||
+                    interaction.customId === 'skip_voucher_distribution') {
+                    const command = interaction.client.commands.get('createvoucher');
+                    if (command && command.handleButton) {
+                        await command.handleButton(interaction);
+                    }
+                }
+                // Handle managevouchers interactions
+                else if (interaction.customId.startsWith('manage_')) {
+                    const command = interaction.client.commands.get('managevouchers');
+                    if (command && command.handleInteraction) {
+                        await command.handleInteraction(interaction);
                     }
                 }
             } catch (error) {
@@ -54,6 +80,20 @@ module.exports = {
                     const command = interaction.client.commands.get('sendmessage_file');
                     if (command && command.handleModal) {
                         await command.handleModal(interaction);
+                    }
+                }
+                // Handle createvoucher modal
+                else if (interaction.customId === 'createvoucher_modal') {
+                    const command = interaction.client.commands.get('createvoucher');
+                    if (command && command.handleModal) {
+                        await command.handleModal(interaction);
+                    }
+                }
+                // Handle voucher code modal
+                else if (interaction.customId === 'voucher_code_modal') {
+                    const command = interaction.client.commands.get('legitvn');
+                    if (command && command.handleVoucherModal) {
+                        await command.handleVoucherModal(interaction);
                     }
                 }
             } catch (error) {

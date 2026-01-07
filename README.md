@@ -23,6 +23,13 @@
 - ✅ **Xác nhận/Hủy bỏ** - An toàn tránh nhầm lẫn
 - ✅ **Thống kê chi tiết** - Progress bar và báo cáo
 
+### 🎟️ Hệ thống Voucher
+- ✅ **Tạo mã giảm giá** - Hỗ trợ giảm cố định và phần trăm
+- ✅ **Phân phối tự động** - Gửi DM hàng loạt qua file
+- ✅ **Theo dõi hết hạn** - Auto-update embed khi expire
+- ✅ **Quản lý trạng thái** - Active/Inactive, đã dùng/hết hạn
+- ✅ **Áp dụng tự động** - Tích hợp với thanh toán PayOS
+
 ### 🎯 Commands
 
 | Command | Mô tả |
@@ -30,6 +37,9 @@
 | `/legitvn` | Hiển thị sản phẩm và xử lý thanh toán |
 | `/qrcode` | Tạo mã QR VietQR với giá trị mặc định |
 | `/sendmessage_file` | Gửi tin nhắn hàng loạt qua file |
+| `/createvoucher` | Tạo mã giảm giá và phân phối tự động (Admin) |
+| `/managevouchers` | Quản lý danh sách voucher (Admin) |
+| `/myvouchers` | Xem danh sách voucher của bạn |
 
 ## 🚀 Quick Start
 
@@ -159,6 +169,41 @@ YOUR_DOMAIN=http://localhost:3000
 4. Xem preview
 5. Nhấn "Xác nhận gửi" hoặc "Hủy bỏ"
 
+### Hệ thống Voucher
+
+#### `/createvoucher` - Tạo mã giảm giá
+
+```
+/createvoucher code:NEWYEAR2026 value:50000 days:30
+```
+
+**Tùy chọn:**
+- `code` (bắt buộc): Mã voucher (VD: NEWYEAR2026)
+- `value` (bắt buộc): Giá trị giảm (số tiền hoặc %)
+- `type`: Loại giảm (`fixed` hoặc `percentage`, tự động nhận diện)
+- `days`: Số ngày hết hạn (mặc định: 30)
+- `products`: Sản phẩm áp dụng, cách nhau bằng dấu phẩy
+- `file`: Upload file JSON để phân phối ngay cho users
+
+**Phân phối tự động:**
+```json
+["123456789", "987654321"]
+```
+Bot sẽ tự động gửi DM voucher cho từng user trong danh sách.
+
+#### `/managevouchers` - Quản lý voucher (Admin)
+
+- Xem danh sách tất cả voucher
+- Toggle trạng thái Active/Inactive
+- Xóa voucher (từng cái hoặc tất cả)
+- Xem thống kê sử dụng
+
+#### `/myvouchers` - Xem voucher của bạn
+
+- Hiển thị tất cả voucher khả dụng
+- Thống kê: Khả dụng, Đã dùng, Hết hạn
+- Tự động ẩn voucher đã hết hạn hoặc đã dùng
+
 ## 🌐 Deployment
 
 ### Render (Khuyến nghị)
@@ -195,14 +240,21 @@ payment-discord-bot/
 │   │   ├── commands/        # Slash commands
 │   │   │   ├── legitvn.js
 │   │   │   ├── qrcode.js
-│   │   │   └── sendmessagefile.js
+│   │   │   ├── sendmessagefile.js
+│   │   │   ├── createvoucher.js
+│   │   │   ├── managevouchers.js
+│   │   │   └── myvouchers.js
 │   │   ├── events/          # Discord events
 │   │   └── client.js
 │   ├── server/
 │   │   ├── routes/          # Express routes
 │   │   └── app.js
 │   ├── services/            # Business logic
+│   │   ├── paymentService.js
+│   │   └── voucherService.js
 │   ├── utils/               # Helper functions
+│   │   ├── helpers.js
+│   │   └── voucherScheduler.js
 │   └── SlashCommands/       # Command registration
 ├── .env.example             # Environment template
 ├── .gitignore

@@ -1,6 +1,7 @@
 const client = require('./src/discord/client');
 const app = require('./src/server/app');
 const config = require('./src/config/config');
+const { startVoucherExpirationScheduler } = require('./src/utils/voucherScheduler');
 
 
 
@@ -44,6 +45,9 @@ async function startBot() {
 
     await client.login(config.token);
     console.log('✅ Discord bot logged in successfully');
+
+    // Start voucher expiration scheduler
+    startVoucherExpirationScheduler(client);
   } catch (error) {
     console.error('❌ Failed to login to Discord:', error);
     // Retry after 30 seconds

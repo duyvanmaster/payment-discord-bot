@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon --watch index.js",
+    "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -20,7 +20,7 @@
     "firebase": "^11.0.1",
     "mongoose": "^8.7.0",
     "ngrok": "^5.0.0-beta.2",
-    "nodemon": "^3.1.7",
+    "nodemon": "^3.1.11",
     "qrcode": "^1.5.4",
     "vietqr": "^1.1.9"
   }

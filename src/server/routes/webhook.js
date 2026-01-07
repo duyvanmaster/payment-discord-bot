@@ -6,6 +6,7 @@ const client = require('../../discord/client');
 const { createTicket } = require('../../handler/ticketManager');
 const { getProductDisplayName } = require('../../utils/productname');
 const { updatePaymentStatusOnChannel } = require('../../utils/statusonchanel');
+const { applyVoucher } = require('../../services/voucherService');
 const config = require('../../config/config');
 
 router.post('/payos-webhook', async (req, res) => {
@@ -29,6 +30,18 @@ router.post('/payos-webhook', async (req, res) => {
         const userId = pendingPayment.userId || "unknownUser";
         const product = pendingPayment.product || "unknownProduct";
         const messageId = pendingPayment.messageId || null;
+        const voucherCode = pendingPayment.voucherCode || null;
+
+        // If voucher was used, mark it as used
+        if (voucherCode) {
+            try {
+                await applyVoucher(voucherCode, userId, orderCode, amount);
+                console.log(`Voucher ${voucherCode} marked as used for order ${orderCode}`);
+            } catch (voucherError) {
+                console.error(`Error applying voucher ${voucherCode}:`, voucherError);
+                // Continue with payment processing even if voucher marking fails
+            }
+        }
 
         const user = await client.users.fetch(userId);
         const guild = await client.guilds.fetch(config.guildId);

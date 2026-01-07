@@ -19,6 +19,15 @@ client.commands.set(qrcodeCommand.data.name, qrcodeCommand);
 const sendmessagefileCommand = require('./commands/sendmessagefile');
 client.commands.set(sendmessagefileCommand.data.name, sendmessagefileCommand);
 
+const createvoucherCommand = require('./commands/createvoucher');
+client.commands.set(createvoucherCommand.data.name, createvoucherCommand);
+
+const myvouchersCommand = require('./commands/myvouchers');
+client.commands.set(myvouchersCommand.data.name, myvouchersCommand);
+
+const managevouchersCommand = require('./commands/managevouchers');
+client.commands.set(managevouchersCommand.data.name, managevouchersCommand);
+
 
 
 module.exports = client;

@@ -102,6 +102,60 @@ const commands = [
                 required: true
             }
         ]
+    },
+    {
+        name: 'createvoucher',
+        description: 'Tạo mã giảm giá mới và phân phối cho người dùng',
+        options: [
+            {
+                name: 'code',
+                type: 3, // STRING
+                description: 'Mã giảm giá (VD: NEWYEAR2026)',
+                required: true
+            },
+            {
+                name: 'value',
+                type: 4, // INTEGER
+                description: 'Giá trị giảm (VD: 10000 hoặc 20)',
+                required: true
+            },
+            {
+                name: 'file',
+                type: 11, // ATTACHMENT
+                description: 'File JSON danh sách UserID để phân phối ngay (tùy chọn)',
+                required: false
+            },
+            {
+                name: 'days',
+                type: 4, // INTEGER
+                description: 'Số ngày hết hạn (Mặc định: 30)',
+                required: false
+            },
+            {
+                name: 'products',
+                type: 3, // STRING
+                description: 'Sản phẩm áp dụng (Để trống = Tất cả)',
+                required: false
+            },
+            {
+                name: 'type',
+                type: 3, // STRING
+                description: 'Loại giảm giá',
+                required: false,
+                choices: [
+                    { name: 'Số tiền cố định (VND)', value: 'fixed' },
+                    { name: 'Phần trăm (%)', value: 'percentage' }
+                ]
+            }
+        ]
+    },
+    {
+        name: 'myvouchers',
+        description: 'Xem danh sách mã giảm giá của bạn'
+    },
+    {
+        name: 'managevouchers',
+        description: 'Quản lý danh sách mã giảm giá (Admin Only)'
     }
 ];
 

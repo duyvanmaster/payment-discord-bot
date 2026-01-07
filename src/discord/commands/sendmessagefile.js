@@ -287,7 +287,7 @@ module.exports = {
 
         for (const userId of userIds) {
             try {
-                const sent = await sendDM(interaction.client, userId, { embed });
+                const sent = await sendDM(interaction.client, userId, { embeds: [embed] });
 
                 // Nếu sendDM trả về null/undefined nghĩa là thất bại (đã log lỗi ở helper)
                 if (!sent) {
